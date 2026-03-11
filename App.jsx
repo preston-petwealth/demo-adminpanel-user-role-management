@@ -115,7 +115,7 @@ const INITIAL_INVENTORY = {
   "TT-004": { name: "The Collection Kit", stock: 12, lowThreshold: 5, reorderPoint: 15 },
 };
 
-// Channel Partners — distribution platforms that embed PetWell into their software
+// Channel Partners — distribution platforms that embed PetWealth into their software
 const channelPartners = [
   { id: "CP-001", name: "Kennel Connection", website: "kennelconnection.com", contactName: "Sarah Mitchell", contactEmail: "sarah@kennelconnection.com", contactPhone: "(800) 555-4200", totalNetworkFacilities: 5500, joined: "2025-11-01", status: "Active", description: "Leading dog daycare management software serving 5,500+ facilities nationwide" },
 ];
@@ -806,7 +806,7 @@ const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, kitInvent
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-1">Welcome back{currentUser ? `, ${currentUser.name}` : ""}. Here's your PetWell overview.</p>
+          <p className="text-gray-500 text-sm mt-1">Welcome back{currentUser ? `, ${currentUser.name}` : ""}. Here's your PetWealth overview.</p>
         </div>
         <div className="text-sm text-gray-400 hidden sm:block">Feb 12, 2026</div>
       </div>
@@ -3437,7 +3437,7 @@ const NewOrderPage = ({ setPage, currentUser, initCustomerId, initBulk, clearIni
                   {newCustomer.customerCategory && (
                     <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 animate-fadeInUp">
                       <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5 mb-3"><Lock size={12} /> Portal Account Setup</div>
-                      <p className="text-xs text-indigo-600/70 mb-3">This customer will get a login to view test results on the PetWell portal.</p>
+                      <p className="text-xs text-indigo-600/70 mb-3">This customer will get a login to view test results on the PetWealth portal.</p>
                       <div>
                         <label className="text-xs font-medium text-gray-600 mb-1.5 block">Login Method</label>
                         <div className="flex gap-2">
@@ -4181,7 +4181,7 @@ const ChannelPartnersPage = ({ setPage, setSelectedCustomer, createOrderFor, goB
         <div>
           <button onClick={goBack} className="flex items-center gap-1 text-xs text-indigo-600 font-semibold hover:text-indigo-700 transition-colors group mb-1"><ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> Back</button>
           <h1 className="text-2xl font-bold text-gray-900">Channel Partners</h1>
-          <p className="text-gray-500 text-sm mt-1">Distribution platforms that embed PetWell into their software</p>
+          <p className="text-gray-500 text-sm mt-1">Distribution platforms that embed PetWealth into their software</p>
         </div>
 
         {channelPartners.map(cp => {
@@ -4219,7 +4219,7 @@ const ChannelPartnersPage = ({ setPage, setSelectedCustomer, createOrderFor, goB
                         <div className="text-xs text-orange-600">total facilities</div>
                       </div>
                       <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
-                        <div className="text-xs font-semibold text-indigo-700 mb-1">Active on PetWell</div>
+                        <div className="text-xs font-semibold text-indigo-700 mb-1">Active on PetWealth</div>
                         <div className="text-xl font-bold text-indigo-900">{facilities.length}</div>
                         <div className="text-xs text-indigo-600">facilities onboarded</div>
                       </div>
@@ -4595,24 +4595,24 @@ const FacilityDetailPage = ({ customerId, setPage, setSelectedDog, setSelectedOr
 // ─── Login Page ─────────────────────────────────────────────────────────────
 
 const adminUsers = [
-  { email: "angelo@petwell.com", name: "Angelo P.", role: "Super Admin", empId: "EMP-001", initials: "AP", avatar: "bg-indigo-600" },
-  { email: "maria@petwell.com", name: "Maria Santos", role: "Manager", empId: "EMP-002", initials: "MS", avatar: "bg-emerald-600" },
-  { email: "kevin@petwell.com", name: "Kevin Wu", role: "CS", empId: "EMP-003", initials: "KW", avatar: "bg-amber-600" },
-  { email: "jasmine@petwell.com", name: "Jasmine Lee", role: "Ops", empId: "EMP-004", initials: "JL", avatar: "bg-rose-600" },
-  { email: "derek@petwell.com", name: "Derek Hall", role: "CS", empId: "EMP-005", initials: "DH", avatar: "bg-sky-600" },
+  { email: "angelo@petwealth.com", name: "Angelo P.", role: "Super Admin", empId: "EMP-001", initials: "AP", avatar: "bg-indigo-600" },
+  { email: "maria@petwealth.com", name: "Maria Santos", role: "Manager", empId: "EMP-002", initials: "MS", avatar: "bg-emerald-600" },
+  { email: "kevin@petwealth.com", name: "Kevin Wu", role: "CS", empId: "EMP-003", initials: "KW", avatar: "bg-amber-600" },
+  { email: "jasmine@petwealth.com", name: "Jasmine Lee", role: "Ops", empId: "EMP-004", initials: "JL", avatar: "bg-rose-600" },
+  { email: "derek@petwealth.com", name: "Derek Hall", role: "CS", empId: "EMP-005", initials: "DH", avatar: "bg-sky-600" },
 ];
 
 const INTERNAL_ROLES = ["Super Admin", "Manager", "Ops", "CS"];
 const INVITE_ROLES = ["Manager", "Ops", "CS"];
 
 const INITIAL_INTERNAL_USERS = [
-  { id: "USR-001", firstName: "Angelo", lastName: "P.", email: "angelo@petwell.com", role: "Super Admin", status: "Active", dateAdded: "2024-01-15", lastLogin: "2026-03-11" },
-  { id: "USR-002", firstName: "Maria", lastName: "Santos", email: "maria@petwell.com", role: "Manager", status: "Active", dateAdded: "2024-03-01", lastLogin: "2026-03-10" },
-  { id: "USR-003", firstName: "Kevin", lastName: "Wu", email: "kevin@petwell.com", role: "CS", status: "Active", dateAdded: "2024-06-15", lastLogin: "2026-03-09" },
-  { id: "USR-004", firstName: "Jasmine", lastName: "Lee", email: "jasmine@petwell.com", role: "Ops", status: "Active", dateAdded: "2024-08-01", lastLogin: "2026-03-11" },
-  { id: "USR-005", firstName: "Derek", lastName: "Hall", email: "derek@petwell.com", role: "CS", status: "Active", dateAdded: "2024-09-20", lastLogin: "2026-02-28" },
-  { id: "USR-006", firstName: "Rachel", lastName: "Kim", email: "rachel@petwell.com", role: "Ops", status: "Deactivated", dateAdded: "2024-05-10", lastLogin: "2025-11-30" },
-  { id: "USR-007", firstName: "Tyler", lastName: "Brooks", email: "tyler@petwell.com", role: "Manager", status: "Pending", dateAdded: "2026-03-08", lastLogin: null },
+  { id: "USR-001", firstName: "Angelo", lastName: "P.", email: "angelo@petwealth.com", role: "Super Admin", status: "Active", dateAdded: "2024-01-15", lastLogin: "2026-03-11" },
+  { id: "USR-002", firstName: "Maria", lastName: "Santos", email: "maria@petwealth.com", role: "Manager", status: "Active", dateAdded: "2024-03-01", lastLogin: "2026-03-10" },
+  { id: "USR-003", firstName: "Kevin", lastName: "Wu", email: "kevin@petwealth.com", role: "CS", status: "Active", dateAdded: "2024-06-15", lastLogin: "2026-03-09" },
+  { id: "USR-004", firstName: "Jasmine", lastName: "Lee", email: "jasmine@petwealth.com", role: "Ops", status: "Active", dateAdded: "2024-08-01", lastLogin: "2026-03-11" },
+  { id: "USR-005", firstName: "Derek", lastName: "Hall", email: "derek@petwealth.com", role: "CS", status: "Active", dateAdded: "2024-09-20", lastLogin: "2026-02-28" },
+  { id: "USR-006", firstName: "Rachel", lastName: "Kim", email: "rachel@petwealth.com", role: "Ops", status: "Deactivated", dateAdded: "2024-05-10", lastLogin: "2025-11-30" },
+  { id: "USR-007", firstName: "Tyler", lastName: "Brooks", email: "tyler@petwealth.com", role: "Manager", status: "Pending", dateAdded: "2026-03-08", lastLogin: null },
 ];
 
 const GoogleLogo = () => (
@@ -4672,7 +4672,7 @@ const LoginPage = ({ onLogin }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-4 shadow-lg shadow-indigo-200">
             <span className="text-white text-xl font-bold">PW</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">PetWell Admin</h1>
+          <h1 className="text-2xl font-bold text-gray-900">PetWealth Admin</h1>
           <p className="text-sm text-gray-500 mt-1">Diagnostic Lab Management Portal</p>
         </div>
 
@@ -4682,12 +4682,12 @@ const LoginPage = ({ onLogin }) => {
             <div className="text-center py-8">
               <div className="w-10 h-10 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" style={{ borderWidth: "3px" }} />
               <p className="text-sm font-medium text-gray-700">Signing in{selectedAccount ? ` as ${selectedAccount.name}` : ""}...</p>
-              <p className="text-xs text-gray-400 mt-1">Verifying @petwell.com credentials</p>
+              <p className="text-xs text-gray-400 mt-1">Verifying @petwealth.com credentials</p>
             </div>
           ) : showAccountPicker ? (
             <div>
               <h2 className="text-base font-bold text-gray-900 mb-1">Choose an account</h2>
-              <p className="text-xs text-gray-500 mb-4">to continue to PetWell Admin</p>
+              <p className="text-xs text-gray-500 mb-4">to continue to PetWealth Admin</p>
               <div className="space-y-1.5">
                 {adminUsers.map(user => (
                   <button key={user.email} onClick={() => handleSelectAccount(user)}
@@ -4708,7 +4708,7 @@ const LoginPage = ({ onLogin }) => {
           ) : (
             <div>
               <h2 className="text-base font-bold text-gray-900 mb-1">Sign in to your account</h2>
-              <p className="text-xs text-gray-500 mb-6">Use your PetWell company Google account to access the admin dashboard.</p>
+              <p className="text-xs text-gray-500 mb-6">Use your PetWealth company Google account to access the admin dashboard.</p>
 
               {error && (
                 <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
@@ -4752,9 +4752,9 @@ const LoginPage = ({ onLogin }) => {
         <div className="mt-6 text-center">
           <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
             <ShieldCheck size={12} />
-            <span>Restricted to @petwell.com accounts</span>
+            <span>Restricted to @petwealth.com accounts</span>
           </div>
-          <p className="text-[11px] text-gray-300 mt-2">PetWell Diagnostics · PCR-Based Pet Health Testing</p>
+          <p className="text-[11px] text-gray-300 mt-2">PetWealth Diagnostics · PCR-Based Pet Health Testing</p>
         </div>
       </div>
     </div>
@@ -4941,7 +4941,7 @@ const OM_DOG_BREEDS = ["Labrador Retriever","German Shepherd","Golden Retriever"
 const OM_CAT_BREEDS = ["Domestic Shorthair","Domestic Longhair","Siamese","Persian","Maine Coon","Ragdoll","Bengal","Abyssinian","British Shorthair","Scottish Fold","Sphynx","Russian Blue","Burmese","Norwegian Forest Cat","Birman","Oriental Shorthair","Devon Rex","Exotic Shorthair","Mixed Breed","Other"];
 
 const OM_USERS = [
-  { email: "angelo@petwell.com", password: "admin", role: "admin", name: "Angelo", customerId: null },
+  { email: "angelo@petwealth.com", password: "admin", role: "admin", name: "Angelo", customerId: null },
   { email: "sarah@goldenpawsbreeding.com", password: "golden123", role: "customer", name: "Sarah Mitchell", customerId: "CUST-001" },
   { email: "james.r@email.com", password: "james123", role: "customer", name: "James Rivera", customerId: "CUST-002" },
   { email: "lisa@happytailsvet.com", password: "happy123", role: "customer", name: "Lisa Chen", customerId: "CUST-003" },
@@ -5082,7 +5082,7 @@ function OM_printOrderContent(order, petProfiles) {
 
   let c = "", y = OM_PH_PT - M;
   c += OM_pdfFill(0.05,0.58,0.53); c += OM_pdfR(0,OM_PH_PT-30,OM_PW_PT,30);
-  c += OM_pdfFill(1,1,1); c += OM_pdfT(M, OM_PH_PT-22, "PetWell Order Report", 14, true);
+  c += OM_pdfFill(1,1,1); c += OM_pdfT(M, OM_PH_PT-22, "PetWealth Order Report", 14, true);
   c += OM_pdfFill(0,0,0); y -= 30;
   c += OM_pdfFill(0.42,0.45,0.49); c += OM_pdfT(M, y, "Order ID", 8); c += OM_pdfT(200, y, "Date", 8); c += OM_pdfT(350, y, "Status", 8);
   y -= 16; c += OM_pdfFill(0,0,0); c += OM_pdfT(M, y, order.id, 16, true); c += OM_pdfT(200, y, OM_formatDate(order.date), 11); c += OM_pdfT(350, y, order.status, 11, true);
@@ -5114,7 +5114,7 @@ function OM_printOrderContent(order, petProfiles) {
     c += OM_pdfFill(0,0,0); c += OM_pdfT(M, y, order.notes.substring(0,90), 9);
     if (order.notes.length > 90) { y -= 12; c += OM_pdfT(M, y, order.notes.substring(90, 180), 9); }
   }
-  c += OM_pdfFill(0.62,0.64,0.68); c += OM_pdfT(M, 30, "Generated from PetWell Order Management  |  " + new Date().toLocaleDateString(), 7);
+  c += OM_pdfFill(0.62,0.64,0.68); c += OM_pdfT(M, 30, "Generated from PetWealth Order Management  |  " + new Date().toLocaleDateString(), 7);
   pages.push({ c, w: OM_PW_PT, h: OM_PH_PT });
 
   if (order.bulkKits && order.bulkKits.length > 0) {
@@ -5139,7 +5139,7 @@ function OM_printOrderContent(order, petProfiles) {
         else { pc += OM_pdfFill(0.75,0.75,0.75); pc += OM_pdfT(220, py, "Not registered", 7); }
         py -= 15;
       }
-      pc += OM_pdfFill(0.62,0.64,0.68); pc += OM_pdfT(M, 30, "PetWell Kit Registry  |  " + new Date().toLocaleDateString(), 7);
+      pc += OM_pdfFill(0.62,0.64,0.68); pc += OM_pdfT(M, 30, "PetWealth Kit Registry  |  " + new Date().toLocaleDateString(), 7);
       pages.push({ c: pc, w: OM_PW_PT, h: OM_PH_PT });
     }
   }
@@ -5161,7 +5161,7 @@ function OM_printBarcodeSheet(order) {
         const kit = kits[idx];
         const lx = LML + col * (LW + CG);
         const ly = OM_PH_PT - LMT - (row + 1) * LH;
-        c += OM_pdfFill(0.53,0.53,0.53); c += OM_pdfT(lx + 4, ly + LH - 10, "PetWell  |  " + (order.bulkProduct || "Test Kit"), 5.5, true);
+        c += OM_pdfFill(0.53,0.53,0.53); c += OM_pdfT(lx + 4, ly + LH - 10, "PetWealth  |  " + (order.bulkProduct || "Test Kit"), 5.5, true);
         c += OM_pdfBarcode128(lx + 14, ly + 14, kit.kitId, 160, 30);
         c += OM_pdfFill(0,0,0); c += OM_pdfT(lx + 38, ly + 4, kit.kitId, 7, true);
       }
@@ -5413,8 +5413,8 @@ function OMAdminOrderList({ orders, onSelectOrder, petProfiles }) {
         <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option>All</option>{OM_STATUS_FLOW.map(s => <option key={s}>{s}</option>)}<option>Cancelled</option>
         </select>
-        <button onClick={() => { const csv = OM_buildOrderKitCSV(filtered, petProfiles); OM_downloadCSV(`PetWell-All-Orders-Kits-Pets-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-teal-300 text-teal-700 text-sm rounded-lg hover:bg-teal-50 flex items-center gap-1.5 shadow-sm"><OMIconCSV /> Export All CSV</button>
-        <button onClick={() => { const csv = OM_buildOrderSummaryCSV(filtered); OM_downloadCSV(`PetWell-Order-Summary-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm"><OMIconDownload /> Summary CSV</button>
+        <button onClick={() => { const csv = OM_buildOrderKitCSV(filtered, petProfiles); OM_downloadCSV(`PetWealth-All-Orders-Kits-Pets-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-teal-300 text-teal-700 text-sm rounded-lg hover:bg-teal-50 flex items-center gap-1.5 shadow-sm"><OMIconCSV /> Export All CSV</button>
+        <button onClick={() => { const csv = OM_buildOrderSummaryCSV(filtered); OM_downloadCSV(`PetWealth-Order-Summary-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm"><OMIconDownload /> Summary CSV</button>
       </div>
       {filtered.length === 0 ? <div className="text-center py-12 text-gray-400"><p className="text-lg">No orders found</p></div> : (
         <div className="space-y-2">
@@ -6136,7 +6136,7 @@ const InviteUserModal = ({ onClose, onInvite, existingEmails }) => {
             <label className="text-sm font-medium text-gray-700 mb-1 block">Email Address</label>
             <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailError(null); }}
               className={`w-full px-3 py-2.5 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${emailError ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-              placeholder="jane@petwell.com" />
+              placeholder="jane@petwealth.com" />
             {emailError && <p className="text-xs text-red-600 mt-1">{emailError}</p>}
           </div>
           <div>
@@ -6425,7 +6425,7 @@ const UserManagementPage = ({ currentUser, goBack }) => {
       {deactivatingUser && (
         <ConfirmActionModal
           title="Deactivate User"
-          message={`Deactivate ${deactivatingUser.firstName} ${deactivatingUser.lastName}? They will lose access to all Petwell applications. This can be reversed.`}
+          message={`Deactivate ${deactivatingUser.firstName} ${deactivatingUser.lastName}? They will lose access to all Petwealth applications. This can be reversed.`}
           confirmLabel="Deactivate"
           confirmStyle="bg-red-600 hover:bg-red-700 text-white"
           iconType="warning"
@@ -6623,7 +6623,7 @@ export default function App() {
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-200">PW</div>
                 <div>
-                  <div className="text-sm font-bold text-gray-900">PetWell</div>
+                  <div className="text-sm font-bold text-gray-900">PetWealth</div>
                   <div className="text-xs text-gray-400">Admin Portal</div>
                 </div>
               </div>
@@ -6666,7 +6666,7 @@ export default function App() {
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-200">PW</div>
               <div>
-                <div className="text-sm font-bold text-gray-900">PetWell</div>
+                <div className="text-sm font-bold text-gray-900">PetWealth</div>
                 <div className="text-xs text-gray-400">Admin Portal</div>
               </div>
             </div>
