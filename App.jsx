@@ -102,9 +102,10 @@ const DOG_BREEDS = ["Australian Cattle Dog", "Australian Shepherd", "Beagle", "B
 const CAT_BREEDS = ["Abyssinian", "American Shorthair", "Bengal", "Birman", "British Shorthair", "Burmese", "Devon Rex", "Domestic Longhair", "Domestic Shorthair", "Exotic Shorthair", "Himalayan", "Maine Coon", "Norwegian Forest Cat", "Persian", "Ragdoll", "Russian Blue", "Scottish Fold", "Siamese", "Siberian", "Sphynx", "Tabby", "Tonkinese", "Turkish Angora", "Mixed Breed", "Other"];
 
 const ROLE_PERMISSIONS = {
-  Admin: ["refund", "edit_order_status", "edit_customer", "edit_dog", "create_vet_order", "acknowledge_alert", "resolve_alert", "update_results", "flag_results", "reassign_dog", "manage_inventory", "add_notes", "view_all", "release_results"],
-  "Lab Staff": ["update_results", "flag_results", "acknowledge_alert", "add_notes", "view_all"],
-  Support: ["add_notes", "view_all"],
+  "Super Admin": ["refund", "edit_order_status", "edit_customer", "edit_dog", "create_vet_order", "acknowledge_alert", "resolve_alert", "update_results", "flag_results", "reassign_dog", "manage_inventory", "add_notes", "view_all", "release_results"],
+  "Manager": ["refund", "edit_order_status", "edit_customer", "edit_dog", "create_vet_order", "acknowledge_alert", "resolve_alert", "update_results", "flag_results", "reassign_dog", "add_notes", "view_all", "release_results"],
+  "Ops": ["edit_order_status", "update_results", "flag_results", "acknowledge_alert", "add_notes", "view_all"],
+  "CS": ["add_notes", "view_all"],
 };
 
 const INITIAL_INVENTORY = {
@@ -4594,11 +4595,24 @@ const FacilityDetailPage = ({ customerId, setPage, setSelectedDog, setSelectedOr
 // ─── Login Page ─────────────────────────────────────────────────────────────
 
 const adminUsers = [
-  { email: "angelo@petwell.com", name: "Angelo P.", role: "Admin", empId: "EMP-001", initials: "AP", avatar: "bg-indigo-600" },
-  { email: "maria@petwell.com", name: "Maria Santos", role: "Lab Staff", empId: "EMP-002", initials: "MS", avatar: "bg-emerald-600" },
-  { email: "kevin@petwell.com", name: "Kevin Wu", role: "Support", empId: "EMP-003", initials: "KW", avatar: "bg-amber-600" },
-  { email: "jasmine@petwell.com", name: "Jasmine Lee", role: "Lab Staff", empId: "EMP-004", initials: "JL", avatar: "bg-rose-600" },
-  { email: "derek@petwell.com", name: "Derek Hall", role: "Support", empId: "EMP-005", initials: "DH", avatar: "bg-sky-600" },
+  { email: "angelo@petwell.com", name: "Angelo P.", role: "Super Admin", empId: "EMP-001", initials: "AP", avatar: "bg-indigo-600" },
+  { email: "maria@petwell.com", name: "Maria Santos", role: "Manager", empId: "EMP-002", initials: "MS", avatar: "bg-emerald-600" },
+  { email: "kevin@petwell.com", name: "Kevin Wu", role: "CS", empId: "EMP-003", initials: "KW", avatar: "bg-amber-600" },
+  { email: "jasmine@petwell.com", name: "Jasmine Lee", role: "Ops", empId: "EMP-004", initials: "JL", avatar: "bg-rose-600" },
+  { email: "derek@petwell.com", name: "Derek Hall", role: "CS", empId: "EMP-005", initials: "DH", avatar: "bg-sky-600" },
+];
+
+const INTERNAL_ROLES = ["Super Admin", "Manager", "Ops", "CS"];
+const INVITE_ROLES = ["Manager", "Ops", "CS"];
+
+const INITIAL_INTERNAL_USERS = [
+  { id: "USR-001", firstName: "Angelo", lastName: "P.", email: "angelo@petwell.com", role: "Super Admin", status: "Active", dateAdded: "2024-01-15", lastLogin: "2026-03-11" },
+  { id: "USR-002", firstName: "Maria", lastName: "Santos", email: "maria@petwell.com", role: "Manager", status: "Active", dateAdded: "2024-03-01", lastLogin: "2026-03-10" },
+  { id: "USR-003", firstName: "Kevin", lastName: "Wu", email: "kevin@petwell.com", role: "CS", status: "Active", dateAdded: "2024-06-15", lastLogin: "2026-03-09" },
+  { id: "USR-004", firstName: "Jasmine", lastName: "Lee", email: "jasmine@petwell.com", role: "Ops", status: "Active", dateAdded: "2024-08-01", lastLogin: "2026-03-11" },
+  { id: "USR-005", firstName: "Derek", lastName: "Hall", email: "derek@petwell.com", role: "CS", status: "Active", dateAdded: "2024-09-20", lastLogin: "2026-02-28" },
+  { id: "USR-006", firstName: "Rachel", lastName: "Kim", email: "rachel@petwell.com", role: "Ops", status: "Deactivated", dateAdded: "2024-05-10", lastLogin: "2025-11-30" },
+  { id: "USR-007", firstName: "Tyler", lastName: "Brooks", email: "tyler@petwell.com", role: "Manager", status: "Pending", dateAdded: "2026-03-08", lastLogin: null },
 ];
 
 const GoogleLogo = () => (
@@ -6029,6 +6043,411 @@ function OrderManagerPage({ initialView, omOrders, setOmOrders, omPetProfiles, s
   );
 }
 
+// ─── User Management ─────────────────────────────────────────────────────────
+
+const getRoleBadgeStyle = (role) => {
+  switch (role) {
+    case "Super Admin": return "bg-indigo-100 text-indigo-700 border border-indigo-200";
+    case "Manager": return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    case "Ops": return "bg-amber-50 text-amber-700 border border-amber-200";
+    case "CS": return "bg-sky-50 text-sky-700 border border-sky-200";
+    default: return "bg-gray-100 text-gray-600 border border-gray-200";
+  }
+};
+
+const getStatusBadgeStyle = (status) => {
+  switch (status) {
+    case "Active": return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    case "Deactivated": return "bg-red-50 text-red-600 border border-red-200";
+    case "Pending": return "bg-amber-50 text-amber-600 border border-amber-200";
+    default: return "bg-gray-100 text-gray-600 border border-gray-200";
+  }
+};
+
+const ConfirmActionModal = ({ title, message, confirmLabel, confirmStyle, onConfirm, onCancel, iconType = "warning" }) => (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 animate-scaleIn shadow-xl">
+      <div className="flex items-start gap-4 mb-5">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconType === "warning" ? "bg-red-50" : "bg-emerald-50"}`}>
+          {iconType === "warning"
+            ? <AlertTriangle size={18} className="text-red-500" />
+            : <CheckCircle size={18} className="text-emerald-500" />}
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-gray-900">{title}</h2>
+          <p className="text-sm text-gray-500 mt-1">{message}</p>
+        </div>
+      </div>
+      <div className="flex gap-3">
+        <button onClick={onCancel} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">Cancel</button>
+        <button onClick={onConfirm} className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition ${confirmStyle}`}>{confirmLabel}</button>
+      </div>
+    </div>
+  </div>
+);
+
+const InviteUserModal = ({ onClose, onInvite, existingEmails }) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [emailError, setEmailError] = useState(null);
+
+  const handleSubmit = () => {
+    if (!firstName || !lastName || !email || !role) return;
+    if (existingEmails.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
+      setEmailError("A user with this email already exists.");
+      return;
+    }
+    onInvite({
+      id: `USR-${String(Date.now()).slice(-5)}`,
+      firstName, lastName,
+      email: email.toLowerCase(),
+      role, status: "Pending",
+      dateAdded: new Date().toISOString().split("T")[0],
+      lastLogin: null,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 animate-scaleIn shadow-xl">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Invite User</h2>
+            <p className="text-xs text-gray-500 mt-0.5">An invitation email will be sent via Auth0.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition"><X size={20} /></button>
+        </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">First Name</label>
+              <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
+                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Jane" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Last Name</label>
+              <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
+                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Smith" />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Email Address</label>
+            <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailError(null); }}
+              className={`w-full px-3 py-2.5 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${emailError ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              placeholder="jane@petwell.com" />
+            {emailError && <p className="text-xs text-red-600 mt-1">{emailError}</p>}
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Role</label>
+            <select value={role} onChange={e => setRole(e.target.value)}
+              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Select a role...</option>
+              {INVITE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <p className="text-[11px] text-gray-400 mt-1">Super Admin is excluded from self-service invite to prevent privilege escalation.</p>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">Cancel</button>
+          <button onClick={handleSubmit} disabled={!firstName || !lastName || !email || !role}
+            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Send Invitation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditRoleModal = ({ user, onClose, onSave }) => {
+  const [role, setRole] = useState(user.role);
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 animate-scaleIn shadow-xl">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold text-gray-900">Edit Role</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition"><X size={20} /></button>
+        </div>
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-4">
+          <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {user.firstName[0]}{user.lastName[0]}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</div>
+            <div className="text-xs text-gray-500 truncate">{user.email}</div>
+          </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Role</label>
+          <select value={role} onChange={e => setRole(e.target.value)}
+            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {INTERNAL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">Cancel</button>
+          <button onClick={() => onSave(user.id, role)} disabled={role === user.role}
+            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UserManagementPage = ({ currentUser, goBack }) => {
+  const [users, setUsers] = useState(INITIAL_INTERNAL_USERS);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [deactivatingUser, setDeactivatingUser] = useState(null);
+  const [reactivatingUser, setReactivatingUser] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const filtered = users.filter(u => {
+    const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+    const matchSearch = !search || fullName.includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+    const matchRole = roleFilter === "All" || u.role === roleFilter;
+    const matchStatus = statusFilter === "All" || u.status === statusFilter;
+    return matchSearch && matchRole && matchStatus;
+  });
+
+  const isSelf = (u) => u.email === currentUser?.email;
+
+  const handleInvite = (newUser) => {
+    setUsers(prev => [...prev, newUser]);
+    setShowInviteModal(false);
+    showToast(`Invitation sent to ${newUser.email}`);
+  };
+
+  const handleEditRole = (userId, newRole) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    setEditingUser(null);
+    showToast("Role updated successfully");
+  };
+
+  const handleDeactivate = () => {
+    const name = `${deactivatingUser.firstName} ${deactivatingUser.lastName}`;
+    setUsers(prev => prev.map(u => u.id === deactivatingUser.id ? { ...u, status: "Deactivated" } : u));
+    setDeactivatingUser(null);
+    showToast(`${name} has been deactivated`);
+  };
+
+  const handleReactivate = () => {
+    const name = `${reactivatingUser.firstName} ${reactivatingUser.lastName}`;
+    setUsers(prev => prev.map(u => u.id === reactivatingUser.id ? { ...u, status: "Active" } : u));
+    setReactivatingUser(null);
+    showToast(`${name} has been reactivated`);
+  };
+
+  const activeCount = users.filter(u => u.status === "Active").length;
+  const pendingCount = users.filter(u => u.status === "Pending").length;
+  const deactivatedCount = users.filter(u => u.status === "Deactivated").length;
+
+  return (
+    <AnimatedPage>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm animate-scaleIn">
+          <CheckCircle size={15} /> {toast}
+        </div>
+      )}
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <button onClick={goBack} className="flex items-center gap-1 text-xs text-indigo-600 font-semibold hover:text-indigo-700 transition-colors group mb-1">
+              <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> Back
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">User Management</h1>
+            <p className="text-gray-500 text-sm mt-1">
+              {activeCount} active · {pendingCount} pending · {deactivatedCount} deactivated
+            </p>
+          </div>
+          <button onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition shadow-sm shadow-indigo-200 flex-shrink-0">
+            <Plus size={16} /> Invite User
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3">
+          <div className="w-full sm:w-72">
+            <SearchInput value={search} onChange={setSearch} placeholder="Search by name or email..." />
+          </div>
+          <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+            className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
+            <option value="All">All Roles</option>
+            {INTERNAL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Pending">Pending</option>
+            <option value="Deactivated">Deactivated</option>
+          </select>
+        </div>
+
+        {/* Desktop Table */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hidden md:block">
+          <div className="overflow-x-auto custom-scroll">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/50">
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Added</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
+                  <th className="px-5 py-3.5"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-12 text-center text-sm text-gray-400">No users match your search or filters.</td>
+                  </tr>
+                ) : filtered.map(u => {
+                  const initials = `${u.firstName[0]}${u.lastName[0]}`;
+                  const self = isSelf(u);
+                  return (
+                    <tr key={u.id} className={`border-b border-gray-50 row-hover ${u.status === "Deactivated" ? "opacity-60" : ""}`}>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${u.status === "Deactivated" ? "bg-gray-400" : "bg-indigo-500"}`}>{initials}</div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-gray-900 text-sm">{u.firstName} {u.lastName}</span>
+                              {self && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">You</span>}
+                            </div>
+                            <div className="text-xs text-gray-400">{u.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-gray-600">{u.email}</td>
+                      <td className="px-5 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeStyle(u.role)}`}>{u.role}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadgeStyle(u.status)}`}>{u.status}</span>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-gray-500">{u.dateAdded}</td>
+                      <td className="px-5 py-4 text-sm text-gray-500">{u.lastLogin || "—"}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2 justify-end">
+                          {u.status !== "Deactivated" && !self && (
+                            <button onClick={() => setEditingUser(u)}
+                              className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                              Edit Role
+                            </button>
+                          )}
+                          {u.status === "Active" && !self && (
+                            <button onClick={() => setDeactivatingUser(u)}
+                              className="px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">
+                              Deactivate
+                            </button>
+                          )}
+                          {u.status === "Deactivated" && (
+                            <button onClick={() => setReactivatingUser(u)}
+                              className="px-3 py-1.5 text-xs font-semibold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition">
+                              Reactivate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile card view */}
+        <div className="block md:hidden space-y-3">
+          {filtered.length === 0 ? (
+            <div className="text-center text-sm text-gray-400 py-8">No users match your search or filters.</div>
+          ) : filtered.map((u, idx) => {
+            const initials = `${u.firstName[0]}${u.lastName[0]}`;
+            const self = isSelf(u);
+            return (
+              <div key={u.id} className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 animate-fadeInUp ${u.status === "Deactivated" ? "opacity-60" : ""}`} style={{ animationDelay: `${idx * 0.03}s` }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${u.status === "Deactivated" ? "bg-gray-400" : "bg-indigo-500"}`}>{initials}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold text-gray-900 text-sm">{u.firstName} {u.lastName}</span>
+                      {self && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">You</span>}
+                    </div>
+                    <div className="text-xs text-gray-400 truncate">{u.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeStyle(u.role)}`}>{u.role}</span>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadgeStyle(u.status)}`}>{u.status}</span>
+                </div>
+                <div className="text-xs text-gray-400 mb-3">Added {u.dateAdded} · Last login: {u.lastLogin || "—"}</div>
+                <div className="flex gap-2">
+                  {u.status !== "Deactivated" && !self && (
+                    <button onClick={() => setEditingUser(u)} className="flex-1 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-center">Edit Role</button>
+                  )}
+                  {u.status === "Active" && !self && (
+                    <button onClick={() => setDeactivatingUser(u)} className="flex-1 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition text-center">Deactivate</button>
+                  )}
+                  {u.status === "Deactivated" && (
+                    <button onClick={() => setReactivatingUser(u)} className="flex-1 px-3 py-1.5 text-xs font-semibold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition text-center">Reactivate</button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {showInviteModal && (
+        <InviteUserModal
+          onClose={() => setShowInviteModal(false)}
+          onInvite={handleInvite}
+          existingEmails={users.map(u => u.email)}
+        />
+      )}
+      {editingUser && (
+        <EditRoleModal user={editingUser} onClose={() => setEditingUser(null)} onSave={handleEditRole} />
+      )}
+      {deactivatingUser && (
+        <ConfirmActionModal
+          title="Deactivate User"
+          message={`Deactivate ${deactivatingUser.firstName} ${deactivatingUser.lastName}? They will lose access to all Petwell applications. This can be reversed.`}
+          confirmLabel="Deactivate"
+          confirmStyle="bg-red-600 hover:bg-red-700 text-white"
+          iconType="warning"
+          onConfirm={handleDeactivate}
+          onCancel={() => setDeactivatingUser(null)}
+        />
+      )}
+      {reactivatingUser && (
+        <ConfirmActionModal
+          title="Reactivate User"
+          message={`Reactivate ${reactivatingUser.firstName} ${reactivatingUser.lastName}? They will regain access based on their assigned role.`}
+          confirmLabel="Reactivate"
+          confirmStyle="bg-emerald-600 hover:bg-emerald-700 text-white"
+          iconType="success"
+          onConfirm={handleReactivate}
+          onCancel={() => setReactivatingUser(null)}
+        />
+      )}
+    </AnimatedPage>
+  );
+};
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 const navItems = [
@@ -6043,6 +6462,7 @@ const navItems = [
   { id: "inventory", label: "Kit Inventory", icon: Archive },
   { id: "orderManager", label: "Wholesale Manager", icon: CreditCard },
   { id: "customerPortal", label: "Customer Portal", icon: Eye },
+  { id: "userManagement", label: "User Management", icon: ShieldCheck, showFor: ["Super Admin"] },
 ];
 
 // Module-level navigation history — persists across re-renders and remounts
@@ -6159,6 +6579,7 @@ export default function App() {
     if (page === "channelPartners") return "Channel Partners";
     if (page === "facilityDetail" && selectedCustomer) return `Channel Partners / ${getCustomerName(selectedCustomer)}`;
     if (page === "inventory") return "Kit Inventory";
+    if (page === "userManagement") return "User Management";
     return navItems.find(n => n.id === page)?.label || "Dashboard";
   };
 
@@ -6184,6 +6605,7 @@ export default function App() {
       case "orderManagerDetail": return <OrderManagerPage {...shared} initialView="detail" omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
       case "orderManagerPetProfile": return <OrderManagerPage {...shared} initialView="petProfile" omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
       case "customerPortal": return <OMCustomerPortalPage omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
+      case "userManagement": return <UserManagementPage currentUser={currentUser} goBack={goBack} />;
       default: return <DashboardPage kitInventory={kitInventory} {...shared} />;
     }
   };
@@ -6210,7 +6632,7 @@ export default function App() {
               </button>
             </div>
             <nav className="flex-1 py-4 px-3">
-              {navItems.map((item, idx) => {
+              {navItems.filter(item => !item.showFor || item.showFor.includes(currentUser?.role)).map((item, idx) => {
                 const isActive = item.id === getActiveNav();
                 return (
                   <button key={item.id} onClick={() => navigateTo(item.id)}
@@ -6251,7 +6673,7 @@ export default function App() {
           )}
         </div>
         <nav className="flex-1 py-4 px-2">
-          {navItems.map(item => {
+          {navItems.filter(item => !item.showFor || item.showFor.includes(currentUser?.role)).map(item => {
             const isActive = item.id === getActiveNav();
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
