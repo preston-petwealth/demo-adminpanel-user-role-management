@@ -788,7 +788,7 @@ const PipelineTracker = ({ currentStatus }) => {
 
 // ─── Dashboard Page ──────────────────────────────────────────────────────────
 
-const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, kitInventory, currentUser, healthAlerts }) => {
+const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, currentUser, healthAlerts }) => {
   const pipelineCounts = useMemo(() => {
     const counts = {};
     PIPELINE_STAGES.forEach(s => { counts[s.key] = 0; });
@@ -818,79 +818,29 @@ const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, kitInvent
         <StatCard icon={FileText} label="Revenue" value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} change="22%" changeType="up" accent="bg-emerald-500" delay={0.2} />
       </div>
 
-      {/* Kit Inventory + Alerts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {kitInventory && (
-          <div onClick={() => setPage("inventory")} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:shadow-md transition animate-fadeInUp" style={{ animationDelay: '0.12s' }}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-gray-900">Kit Stock</h2>
-              <Archive size={16} className="text-gray-400" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {Object.entries(kitInventory).map(([key, kit]) => {
-                const color = kit.stock <= kit.lowThreshold ? "red" : kit.stock <= kit.lowThreshold * 2 ? "amber" : "emerald";
-                return (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 truncate mr-2">{kit.name.replace(" Kit", "")}</span>
-                    <span className={`text-sm font-bold text-${color}-600`}>{kit.stock}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {Object.values(kitInventory).some(k => k.stock <= k.lowThreshold) && (
-              <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-red-600"><AlertTriangle size={12} /> Low stock warning</div>
-            )}
+      {/* Health Alerts */}
+      {healthAlerts && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-fadeInUp" style={{ animationDelay: '0.14s' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-gray-900">Health Alerts</h2>
+            <AlertOctagon size={16} className="text-gray-400" />
           </div>
-        )}
-        {healthAlerts && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-fadeInUp" style={{ animationDelay: '0.14s' }}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-gray-900">Health Alerts</h2>
-              <AlertOctagon size={16} className="text-gray-400" />
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="p-3 rounded-xl bg-red-50">
+              <div className="text-xl font-bold text-red-700">{healthAlerts.filter(a => a.status === "unresolved").length}</div>
+              <div className="text-xs text-red-600 font-medium">Unresolved</div>
             </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 rounded-xl bg-red-50">
-                <div className="text-xl font-bold text-red-700">{healthAlerts.filter(a => a.status === "unresolved").length}</div>
-                <div className="text-xs text-red-600 font-medium">Unresolved</div>
-              </div>
-              <div className="p-3 rounded-xl bg-amber-50">
-                <div className="text-xl font-bold text-amber-700">{healthAlerts.filter(a => a.status === "acknowledged").length}</div>
-                <div className="text-xs text-amber-600 font-medium">Acknowledged</div>
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-50">
-                <div className="text-xl font-bold text-emerald-700">{healthAlerts.filter(a => a.status === "resolved").length}</div>
-                <div className="text-xs text-emerald-600 font-medium">Resolved</div>
-              </div>
+            <div className="p-3 rounded-xl bg-amber-50">
+              <div className="text-xl font-bold text-amber-700">{healthAlerts.filter(a => a.status === "acknowledged").length}</div>
+              <div className="text-xs text-amber-600 font-medium">Acknowledged</div>
+            </div>
+            <div className="p-3 rounded-xl bg-emerald-50">
+              <div className="text-xl font-bold text-emerald-700">{healthAlerts.filter(a => a.status === "resolved").length}</div>
+              <div className="text-xs text-emerald-600 font-medium">Resolved</div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Channel Partners Widget */}
-      <div onClick={() => setPage("channelPartners")} className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200 shadow-sm p-5 cursor-pointer hover:shadow-md transition animate-fadeInUp" style={{ animationDelay: '0.15s' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Layers size={18} className="text-orange-600" />
-            <h2 className="text-base font-bold text-gray-900">Channel Partners</h2>
-          </div>
-          <ChevronRight size={16} className="text-orange-400" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {channelPartners.map(cp => {
-            const cpFacilities = getFacilitiesForChannel(cp.id);
-            const cpOrders = orders.filter(o => o.orderChannel === "facility" && cpFacilities.some(f => f.id === o.customerId));
-            const cpRevenue = cpOrders.reduce((s, o) => s + o.price, 0);
-            return (
-              <React.Fragment key={cp.id}>
-                <div><div className="text-xs text-orange-700 font-medium">{cp.name}</div><div className="text-lg font-bold text-gray-900">{cpFacilities.length} <span className="text-xs font-normal text-gray-500">of {cp.totalNetworkFacilities.toLocaleString()}</span></div><div className="text-xs text-gray-500">facilities active</div></div>
-                <div><div className="text-xs text-orange-700 font-medium">Orders</div><div className="text-lg font-bold text-gray-900">{cpOrders.length}</div><div className="text-xs text-gray-500">facility orders</div></div>
-                <div><div className="text-xs text-orange-700 font-medium">Revenue</div><div className="text-lg font-bold text-emerald-600">${cpRevenue.toLocaleString()}</div><div className="text-xs text-gray-500">wholesale</div></div>
-                <div><div className="text-xs text-orange-700 font-medium">Growth</div><div className="text-lg font-bold text-gray-900">{((cpFacilities.length / cp.totalNetworkFacilities) * 100).toFixed(2)}%</div><div className="text-xs text-gray-500">penetration rate</div></div>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* Pipeline Funnel */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-fadeInUp" style={{ animationDelay: '0.17s' }}>
@@ -6457,11 +6407,7 @@ const navItems = [
   { id: "customers", label: "Customers", icon: Users },
   { id: "dogs", label: "Dogs", icon: () => <span className="text-sm">🐕</span> },
   { id: "results", label: "Lab Results", icon: Microscope },
-  { id: "vetPartners", label: "Vet Partners", icon: Stethoscope },
-  { id: "channelPartners", label: "Channel Partners", icon: Layers },
-  { id: "inventory", label: "Kit Inventory", icon: Archive },
   { id: "orderManager", label: "Wholesale Manager", icon: CreditCard },
-  { id: "customerPortal", label: "Customer Portal", icon: Eye },
   { id: "userManagement", label: "User Management", icon: ShieldCheck, showFor: ["Super Admin"] },
 ];
 
@@ -6491,7 +6437,6 @@ export default function App() {
     { id: "INV-005", kitType: "TT-001", change: 50, reason: "Manual restock", date: "2025-11-01", by: "Angelo P." },
     { id: "INV-006", kitType: "TT-004", change: 20, reason: "Manual restock", date: "2025-12-01", by: "Angelo P." },
   ]);
-  const [showCreateVetOrder, setShowCreateVetOrder] = useState(false);
   const [newOrderCustomerId, setNewOrderCustomerId] = useState(null);
   const [newOrderBulk, setNewOrderBulk] = useState(false);
 
@@ -6550,12 +6495,6 @@ export default function App() {
   const getActiveNav = () => {
     if (["orderDetail"].includes(page)) return "orders";
     if (["orderManagerDetail", "orderManagerPetProfile"].includes(page)) return "orderManager";
-    if (page === "customerDetail" && selectedCustomer) {
-      const cust = customers.find(c => c.id === selectedCustomer);
-      if (cust?.type === "vet") return "vetPartners";
-      if (cust?.type === "facility") return "channelPartners";
-    }
-    if (page === "facilityDetail") return "channelPartners";
     if (["customerDetail", "petOwnerDetail"].includes(page)) return "customers";
     if (["dogDetail"].includes(page)) return "dogs";
     if (["resultDetail"].includes(page)) return "results";
@@ -6575,10 +6514,6 @@ export default function App() {
     }
     if (page === "dogDetail" && selectedDog) return `Dogs / ${getDogName(selectedDog)}`;
     if (page === "resultDetail" && selectedResult) { const r = labResults.find(x => x.id === selectedResult); return `Lab Results / ${r?.testType}`; }
-    if (page === "vetPartners") return "Vet Partners";
-    if (page === "channelPartners") return "Channel Partners";
-    if (page === "facilityDetail" && selectedCustomer) return `Channel Partners / ${getCustomerName(selectedCustomer)}`;
-    if (page === "inventory") return "Kit Inventory";
     if (page === "userManagement") return "User Management";
     return navItems.find(n => n.id === page)?.label || "Dashboard";
   };
@@ -6586,7 +6521,7 @@ export default function App() {
   const renderPage = () => {
     const shared = { setPage: navigate, goBack, setSelectedOrder, setSelectedCustomer, setSelectedDog, setSelectedResult, setSelectedPetOwner, currentUser, healthAlerts, setHealthAlerts, createOrderFor, createBulkOrderFor };
     switch (page) {
-      case "dashboard": return <DashboardPage kitInventory={kitInventory} {...shared} />;
+      case "dashboard": return <DashboardPage {...shared} />;
       case "orders": return <OrdersPage {...shared} />;
       case "newOrder": return <NewOrderPage {...shared} initCustomerId={newOrderCustomerId} initBulk={newOrderBulk} clearInitCustomer={() => { setNewOrderCustomerId(null); setNewOrderBulk(false); }} />;
       case "orderDetail": return <OrderDetailPage orderId={selectedOrder} activityLogs={activityLogs} setActivityLogs={setActivityLogs} paymentStates={paymentStates} setPaymentStates={setPaymentStates} {...shared} />;
@@ -6597,16 +6532,12 @@ export default function App() {
       case "dogDetail": return <DogDetailPage dogId={selectedDog} {...shared} />;
       case "results": return <ResultsPage {...shared} />;
       case "resultDetail": return <ResultDetailPage resultId={selectedResult} {...shared} />;
-      case "vetPartners": return <VetPartnersPage showCreateVetOrder={showCreateVetOrder} setShowCreateVetOrder={setShowCreateVetOrder} {...shared} />;
-      case "channelPartners": return <ChannelPartnersPage {...shared} />;
       case "facilityDetail": return <FacilityDetailPage customerId={selectedCustomer} {...shared} />;
-      case "inventory": return <InventoryPage kitInventory={kitInventory} setKitInventory={setKitInventory} inventoryLog={inventoryLog} setInventoryLog={setInventoryLog} {...shared} />;
       case "orderManager": return <OrderManagerPage {...shared} omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
       case "orderManagerDetail": return <OrderManagerPage {...shared} initialView="detail" omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
       case "orderManagerPetProfile": return <OrderManagerPage {...shared} initialView="petProfile" omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
-      case "customerPortal": return <OMCustomerPortalPage omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
       case "userManagement": return <UserManagementPage currentUser={currentUser} goBack={goBack} />;
-      default: return <DashboardPage kitInventory={kitInventory} {...shared} />;
+      default: return <DashboardPage {...shared} />;
     }
   };
 
@@ -6701,7 +6632,7 @@ export default function App() {
             <div className="text-sm text-gray-500 truncate">{getBreadcrumb()}</div>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
-            <button onClick={() => navigateTo("inventory")} className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="Notifications">
+            <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="Notifications">
               <Bell size={18} />
               {healthAlerts.filter(a => a.status === "unresolved").length > 0 && (
                 <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 rounded-full ring-2 ring-white text-[10px] text-white font-bold flex items-center justify-center px-1">{healthAlerts.filter(a => a.status === "unresolved").length}</span>
@@ -6744,7 +6675,6 @@ export default function App() {
         </div>
       </main>
     </div>
-    <CreateVetOrderModal isOpen={showCreateVetOrder} onClose={() => setShowCreateVetOrder(false)} currentUser={currentUser} />
     </>
   );
 }
