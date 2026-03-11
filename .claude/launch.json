@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "PetWealth Admin",
+      "name": "Petwealth Admin",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "petwealth-admin-deploy", "run", "dev"],
       "port": 3000

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PetWealth Admin Panel — Order Manager</title>
+  <title>Petwealth Admin Panel — Order Manager</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -248,7 +248,7 @@ function OM_printOrderContent(order, petProfiles) {
     c += OM_pdfFill(0.05, 0.58, 0.53);
     c += OM_pdfR(0, OM_PH_PT - 30, OM_PW_PT, 30);
     c += OM_pdfFill(1, 1, 1);
-    c += OM_pdfT(M, OM_PH_PT - 22, "PetWealth Order Report", 14, true);
+    c += OM_pdfT(M, OM_PH_PT - 22, "Petwealth Order Report", 14, true);
     c += OM_pdfFill(0, 0, 0);
     y -= 30;
     c += OM_pdfFill(0.42, 0.45, 0.49);
@@ -329,7 +329,7 @@ function OM_printOrderContent(order, petProfiles) {
         }
     }
     c += OM_pdfFill(0.62, 0.64, 0.68);
-    c += OM_pdfT(M, 30, "Generated from PetWealth Order Management  |  " + new Date().toLocaleDateString(), 7);
+    c += OM_pdfT(M, 30, "Generated from Petwealth Order Management  |  " + new Date().toLocaleDateString(), 7);
     pages.push({ c, w: OM_PW_PT, h: OM_PH_PT });
     if (order.bulkKits && order.bulkKits.length > 0) {
         const ROWS_PP = 38, kits = order.bulkKits;
@@ -379,7 +379,7 @@ function OM_printOrderContent(order, petProfiles) {
                 py -= 15;
             }
             pc += OM_pdfFill(0.62, 0.64, 0.68);
-            pc += OM_pdfT(M, 30, "PetWealth Kit Registry  |  " + new Date().toLocaleDateString(), 7);
+            pc += OM_pdfT(M, 30, "Petwealth Kit Registry  |  " + new Date().toLocaleDateString(), 7);
             pages.push({ c: pc, w: OM_PW_PT, h: OM_PH_PT });
         }
     }
@@ -403,7 +403,7 @@ function OM_printBarcodeSheet(order) {
                 const lx = LML + col * (LW + CG);
                 const ly = OM_PH_PT - LMT - (row + 1) * LH;
                 c += OM_pdfFill(0.53, 0.53, 0.53);
-                c += OM_pdfT(lx + 4, ly + LH - 10, "PetWealth  |  " + (order.bulkProduct || "Test Kit"), 5.5, true);
+                c += OM_pdfT(lx + 4, ly + LH - 10, "Petwealth  |  " + (order.bulkProduct || "Test Kit"), 5.5, true);
                 c += OM_pdfBarcode128(lx + 14, ly + 14, kit.kitId, 160, 30);
                 c += OM_pdfFill(0, 0, 0);
                 c += OM_pdfT(lx + 38, ly + 4, kit.kitId, 7, true);
@@ -630,10 +630,10 @@ function OMAdminOrderList({ orders, onSelectOrder, petProfiles }) {
                 React.createElement("option", null, "All"),
                 OM_STATUS_FLOW.map(s => React.createElement("option", { key: s }, s)),
                 React.createElement("option", null, "Cancelled")),
-            React.createElement("button", { onClick: () => { const csv = OM_buildOrderKitCSV(filtered, petProfiles); OM_downloadCSV(`PetWealth-All-Orders-Kits-Pets-${new Date().toISOString().slice(0, 10)}.csv`, csv); }, className: "px-3 py-2 bg-white border border-teal-300 text-teal-700 text-sm rounded-lg hover:bg-teal-50 flex items-center gap-1.5 shadow-sm" },
+            React.createElement("button", { onClick: () => { const csv = OM_buildOrderKitCSV(filtered, petProfiles); OM_downloadCSV(`Petwealth-All-Orders-Kits-Pets-${new Date().toISOString().slice(0, 10)}.csv`, csv); }, className: "px-3 py-2 bg-white border border-teal-300 text-teal-700 text-sm rounded-lg hover:bg-teal-50 flex items-center gap-1.5 shadow-sm" },
                 React.createElement(OMIconCSV, null),
                 " Export All CSV"),
-            React.createElement("button", { onClick: () => { const csv = OM_buildOrderSummaryCSV(filtered); OM_downloadCSV(`PetWealth-Order-Summary-${new Date().toISOString().slice(0, 10)}.csv`, csv); }, className: "px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm" },
+            React.createElement("button", { onClick: () => { const csv = OM_buildOrderSummaryCSV(filtered); OM_downloadCSV(`Petwealth-Order-Summary-${new Date().toISOString().slice(0, 10)}.csv`, csv); }, className: "px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm" },
                 React.createElement(OMIconDownload, null),
                 " Summary CSV")),
         filtered.length === 0 ? React.createElement("div", { className: "text-center py-12 text-gray-400" },
@@ -1115,7 +1115,7 @@ function App() {
     // Main layout
     React.createElement('div', { className: 'flex h-screen bg-gray-50 font-sans' }, 
     // Mobile menu overlay
-    mobileMenuOpen && React.createElement('div', { className: 'fixed inset-0 z-40 md:hidden' }, React.createElement('div', { className: 'fixed inset-0 bg-gray-900/50', onClick: () => setMobileMenuOpen(false) }), React.createElement('div', { className: 'fixed left-0 top-0 bottom-0 w-64 bg-white shadow-xl p-4 z-50' }, React.createElement('div', { className: 'flex items-center justify-between mb-6' }, React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('div', { className: 'w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold' }, 'PW'), React.createElement('span', { className: 'font-bold text-gray-900' }, 'PetWealth')), React.createElement('button', { onClick: () => setMobileMenuOpen(false), className: 'text-gray-400' }, React.createElement(X, { size: 20 }))), navItems.map(item => {
+    mobileMenuOpen && React.createElement('div', { className: 'fixed inset-0 z-40 md:hidden' }, React.createElement('div', { className: 'fixed inset-0 bg-gray-900/50', onClick: () => setMobileMenuOpen(false) }), React.createElement('div', { className: 'fixed left-0 top-0 bottom-0 w-64 bg-white shadow-xl p-4 z-50' }, React.createElement('div', { className: 'flex items-center justify-between mb-6' }, React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('div', { className: 'w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold' }, 'PW'), React.createElement('span', { className: 'font-bold text-gray-900' }, 'Petwealth')), React.createElement('button', { onClick: () => setMobileMenuOpen(false), className: 'text-gray-400' }, React.createElement(X, { size: 20 }))), navItems.map(item => {
         const isActive = item.id === page;
         return React.createElement('button', {
             key: item.id,
@@ -1125,7 +1125,7 @@ function App() {
         }, React.createElement(item.icon, { size: 18, className: isActive ? 'text-indigo-600' : '' }), React.createElement('span', null, item.label));
     }))), 
     // Desktop sidebar
-    React.createElement('div', { className: 'hidden md:flex flex-col border-r border-gray-200 bg-white ' + (sidebarCollapsed ? 'w-16' : 'w-56') + ' transition-all duration-200' }, React.createElement('div', { className: 'p-4 border-b border-gray-100' }, React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('div', { className: 'w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0' }, 'PW'), !sidebarCollapsed && React.createElement('span', { className: 'font-bold text-gray-900' }, 'PetWealth Admin'))), React.createElement('div', { className: 'flex-1 overflow-y-auto p-3 custom-scroll' }, navItems.map(item => {
+    React.createElement('div', { className: 'hidden md:flex flex-col border-r border-gray-200 bg-white ' + (sidebarCollapsed ? 'w-16' : 'w-56') + ' transition-all duration-200' }, React.createElement('div', { className: 'p-4 border-b border-gray-100' }, React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('div', { className: 'w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0' }, 'PW'), !sidebarCollapsed && React.createElement('span', { className: 'font-bold text-gray-900' }, 'Petwealth Admin'))), React.createElement('div', { className: 'flex-1 overflow-y-auto p-3 custom-scroll' }, navItems.map(item => {
         const isActive = item.id === page;
         return React.createElement('button', {
             key: item.id,

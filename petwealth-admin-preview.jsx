@@ -822,7 +822,7 @@ const sideNavItems = [
   { id: "customerPortal", label: "Customer Portal", icon: "👁" },
 ];
 
-export default function PetWealthAdminPanel() {
+export default function PetwealthAdminPanel() {
   const [page, setPage] = useState("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -902,14 +902,14 @@ export default function PetWealthAdminPanel() {
       {mobileOpen && <div className="fixed inset-0 z-40 md:hidden">
         <div className="fixed inset-0 bg-gray-900/50" onClick={() => setMobileOpen(false)} />
         <div className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-xl p-4 z-50">
-          <div className="flex items-center justify-between mb-6"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">PW</div><span className="font-bold text-gray-900">PetWealth</span></div><button onClick={() => setMobileOpen(false)} className="text-gray-400 text-lg">✕</button></div>
+          <div className="flex items-center justify-between mb-6"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">PW</div><span className="font-bold text-gray-900">Petwealth</span></div><button onClick={() => setMobileOpen(false)} className="text-gray-400 text-lg">✕</button></div>
           {sideNavItems.map(item => <button key={item.id} onClick={() => { setPage(item.id); setMobileOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-sm font-medium transition-all ${getActive() === item.id ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-gray-600 hover:bg-gray-50"}`}><span>{item.icon}</span><span>{item.label}</span></button>)}
         </div>
       </div>}
 
       {/* Desktop sidebar */}
       <div className="hidden md:flex flex-col w-56 border-r border-gray-200 bg-white flex-shrink-0">
-        <div className="p-4 border-b border-gray-100"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">PW</div><span className="font-bold text-gray-900">PetWealth Admin</span></div></div>
+        <div className="p-4 border-b border-gray-100"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">PW</div><span className="font-bold text-gray-900">Petwealth Admin</span></div></div>
         <div className="flex-1 overflow-y-auto p-3">
           {sideNavItems.map(item => <button key={item.id} onClick={() => setPage(item.id)} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-sm font-medium transition-all ${getActive() === item.id ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}><span>{item.icon}</span><span>{item.label}</span></button>)}
         </div>
