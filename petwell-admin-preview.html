@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PetWell Admin Panel — Order Manager</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide-react@0.468.0/dist/umd/lucide-react.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+// ── React hooks ──
+const { useState, useMemo, useEffect, useRef } = React;
+// ── Lucide icons used by admin shell ──
+const _lr = typeof lucideReact !== 'undefined' ? lucideReact : {};
+const LayoutDashboard = _lr.LayoutDashboard || (() => React.createElement('span', null, '📊'));
+const Package = _lr.Package || (() => React.createElement('span', null, '📦'));
+const Plus = _lr.Plus || (() => React.createElement('span', null, '+'));
+const Users = _lr.Users || (() => React.createElement('span', null, '👥'));
+const Microscope = _lr.Microscope || (() => React.createElement('span', null, '🔬'));
+const Stethoscope = _lr.Stethoscope || (() => React.createElement('span', null, '🩺'));
+const Layers = _lr.Layers || (() => React.createElement('span', null, '📑'));
+const Archive = _lr.Archive || (() => React.createElement('span', null, '📁'));
+const CreditCard = _lr.CreditCard || (() => React.createElement('span', null, '💳'));
+const Menu = _lr.Menu || (() => React.createElement('span', null, '☰'));
+const X = _lr.X || (() => React.createElement('span', null, '✕'));
+const LogOut = _lr.LogOut || (() => React.createElement('span', null, '🚪'));
+const ChevronRight = _lr.ChevronRight || (() => React.createElement('span', null, '>'));
+// ═══════════════════════════════════════
+// ORDER MANAGER CODE (from App.jsx)
+// ═══════════════════════════════════════
+// ─── Order Manager Integration ───────────────────────────────────────────────
+// Order Manager Constants
+const OM_PRODUCTS = [
+    { id: "kit-basic", name: "Basic Health Kit", price: 89.00, category: "A la Carte" },
+    { id: "kit-comprehensive", name: "Comprehensive Health Kit", price: 149.00, category: "A la Carte" },
+    { id: "kit-allergy", name: "Allergy & Sensitivity Kit", price: 119.00, category: "A la Carte" },
+    { id: "kit-dna", name: "DNA Breed + Health Kit", price: 179.00, category: "A la Carte" },
+    { id: "kit-feline-fecal", name: "Feline Fecal Test", price: 175.00, category: "A la Carte" },
+    { id: "sub-breeder-monthly", name: "Breeder Monthly Subscription", price: 144.00, category: "Subscription" },
+    { id: "sub-breeder-quarterly", name: "Breeder Quarterly Subscription", price: 399.00, category: "Subscription" },
+    { id: "sub-parent-monthly", name: "Pet Parent Monthly Subscription", price: 49.00, category: "Subscription" },
+    { id: "sub-parent-quarterly", name: "Pet Parent Quarterly Subscription", price: 129.00, category: "Subscription" },
+];
+const OM_STATUS_FLOW = ["Pending", "Confirmed", "Processing", "Shipped", "Delivered"];
+const OM_STATUS_COLORS = {
+    Pending: "bg-yellow-100 text-yellow-800", Confirmed: "bg-blue-100 text-blue-800",
+    Processing: "bg-purple-100 text-purple-800", Shipped: "bg-orange-100 text-orange-800",
+    Delivered: "bg-green-100 text-green-800", Cancelled: "bg-red-100 text-red-800",
+};
+const OM_DOG_BREEDS = ["Labrador Retriever", "German Shepherd", "Golden Retriever", "French Bulldog", "Bulldog", "Poodle", "Beagle", "Rottweiler", "Dachshund", "Yorkshire Terrier", "Boxer", "Siberian Husky", "Great Dane", "Doberman", "Australian Shepherd", "Cavalier King Charles Spaniel", "Shih Tzu", "Bernese Mountain Dog", "Pomeranian", "Border Collie", "Mixed Breed", "Other"];
+const OM_CAT_BREEDS = ["Domestic Shorthair", "Domestic Longhair", "Siamese", "Persian", "Maine Coon", "Ragdoll", "Bengal", "Abyssinian", "British Shorthair", "Scottish Fold", "Sphynx", "Russian Blue", "Burmese", "Norwegian Forest Cat", "Birman", "Oriental Shorthair", "Devon Rex", "Exotic Shorthair", "Mixed Breed", "Other"];
+const OM_USERS = [
+    { email: "angelo@petwell.com", password: "admin", role: "admin", name: "Angelo", customerId: null },
+    { email: "sarah@goldenpawsbreeding.com", password: "golden123", role: "customer", name: "Sarah Mitchell", customerId: "CUST-001" },
+    { email: "james.r@email.com", password: "james123", role: "customer", name: "James Rivera", customerId: "CUST-002" },
+    { email: "lisa@happytailsvet.com", password: "happy123", role: "customer", name: "Lisa Chen", customerId: "CUST-003" },
+];
+const OM_generateOrderId = () => "PW-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
+const OM_formatCurrency = (a) => "$" + a.toFixed(2);
+const OM_formatDate = (d) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function OM_generateBulkKitIds(prefix, quantity, batchCode) {
+    const kits = [];
+    for (let i = 1; i <= quantity; i++)
+        kits.push({ kitId: `${prefix}-${batchCode}-${String(i).padStart(5, "0")}`, index: i });
+    return kits;
+}
+const OM_C128 = ["11011001100", "11001101100", "11001100110", "10010011000", "10010001100", "10001001100", "10011001000", "10011000100", "10001100100", "11001001000", "11001000100", "11000100100", "10110011100", "10011011100", "10011001110", "10111001100", "10011101100", "10011100110", "11001110010", "11001011100", "11001001110", "11011100100", "11001110100", "11101101110", "11101001100", "11100101100", "11100100110", "11101100100", "11100110100", "11100110010", "11011011000", "11011000110", "11000110110", "10100011000", "10001011000", "10001000110", "10110001000", "10001101000", "10001100010", "11010001000", "11000101000", "11000100010", "10110111000", "10110001110", "10001101110", "10111011000", "10111000110", "10001110110", "11101110110", "11010001110", "11000101110", "11011101000", "11011100010", "11011101110", "11101011000", "11101000110", "11100010110", "11101101000", "11101100010", "11100011010", "11101111010", "11001000010", "11110001010", "10100110000", "10100001100", "10010110000", "10010000110", "10000101100", "10000100110", "10110010000", "10110000100", "10011010000", "10011000010", "10000110100", "10000110010", "11000010010", "11001010000", "11110111010", "11000010100", "10001111010", "10100111100", "10010111100", "10010011110", "10111100100", "10011110100", "10011110010", "11110100100", "11110010100", "11110010010", "11011011110", "11011110110", "11110110110", "10101111000", "10100011110", "10001011110", "10111101000", "10111100010", "11110101000", "11110100010", "10111011110", "10111101110", "11101011110", "11110101110", "11010000100", "11010010000", "11010011100", "11000111010"];
+function OM_encodeCode128B(text) {
+    let codes = [104];
+    for (let i = 0; i < text.length; i++)
+        codes.push(text.charCodeAt(i) - 32);
+    let cs = 104;
+    for (let i = 1; i < codes.length; i++)
+        cs += codes[i] * i;
+    codes.push(cs % 103);
+    codes.push(106);
+    return codes.map(c => OM_C128[c]).join("") + "11";
+}
+function OMBarcodeSVG({ value, width = 180, height = 40 }) {
+    const bits = OM_encodeCode128B(value);
+    const bw = width / bits.length;
+    return (React.createElement("svg", { width: width, height: height, viewBox: `0 0 ${width} ${height}` }, bits.split("").map((b, i) => b === "1" ? React.createElement("rect", { key: i, x: i * bw, y: 0, width: bw + 0.5, height: height, fill: "black" }) : null)));
+}
+const OMIconPackage = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M16.5 9.4 7.55 4.24" }),
+    React.createElement("path", { d: "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" }),
+    React.createElement("polyline", { points: "3.29 7 12 12 20.71 7" }),
+    React.createElement("line", { x1: "12", y1: "22", x2: "12", y2: "12" }));
+const OMIconPlus = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("line", { x1: "12", y1: "5", x2: "12", y2: "19" }),
+    React.createElement("line", { x1: "5", y1: "12", x2: "19", y2: "12" }));
+const OMIconList = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("line", { x1: "8", y1: "6", x2: "21", y2: "6" }),
+    React.createElement("line", { x1: "8", y1: "12", x2: "21", y2: "12" }),
+    React.createElement("line", { x1: "8", y1: "18", x2: "21", y2: "18" }),
+    React.createElement("line", { x1: "3", y1: "6", x2: "3.01", y2: "6" }),
+    React.createElement("line", { x1: "3", y1: "12", x2: "3.01", y2: "12" }),
+    React.createElement("line", { x1: "3", y1: "18", x2: "3.01", y2: "18" }));
+const OMIconBoxes = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" }),
+    React.createElement("path", { d: "m7 16.5-4.74-2.85" }),
+    React.createElement("path", { d: "m7 16.5 5-3" }),
+    React.createElement("path", { d: "M7 16.5v5.17" }),
+    React.createElement("path", { d: "M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" }),
+    React.createElement("path", { d: "m17 16.5-5-3" }),
+    React.createElement("path", { d: "m17 16.5 4.74-2.85" }),
+    React.createElement("path", { d: "M17 16.5v5.17" }),
+    React.createElement("path", { d: "M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" }),
+    React.createElement("path", { d: "M12 8 7.26 5.15" }),
+    React.createElement("path", { d: "m12 8 4.74-2.85" }),
+    React.createElement("path", { d: "M12 13.5V8" }));
+const OMIconDownload = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+    React.createElement("polyline", { points: "7 10 12 15 17 10" }),
+    React.createElement("line", { x1: "12", y1: "15", x2: "12", y2: "3" }));
+const OMIconX = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }),
+    React.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" }));
+const OMIconCheck = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("polyline", { points: "20 6 9 17 4 12" }));
+const OMIconSearch = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("circle", { cx: "11", cy: "11", r: "8" }),
+    React.createElement("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" }));
+const OMIconTrash = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("polyline", { points: "3 6 5 6 21 6" }),
+    React.createElement("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }));
+const OMIconCSV = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" }),
+    React.createElement("polyline", { points: "14 2 14 8 20 8" }),
+    React.createElement("line", { x1: "16", y1: "13", x2: "8", y2: "13" }),
+    React.createElement("line", { x1: "16", y1: "17", x2: "8", y2: "17" }));
+const OMIconPaw = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("circle", { cx: "11", cy: "4", r: "2" }),
+    React.createElement("circle", { cx: "18", cy: "8", r: "2" }),
+    React.createElement("circle", { cx: "4", cy: "8", r: "2" }),
+    React.createElement("path", { d: "M12 18c-4 0-6-2-6-5 0-2 1.5-4 3-5s3-1 3-1 1.5 0 3 1 3 3 3 5c0 3-2 5-6 5z" }));
+function OM_downloadFile(filename, content, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+function OM_downloadCSV(filename, csvContent) {
+    OM_downloadFile(filename, csvContent, "text/csv;charset=utf-8;");
+}
+function OM_buildOrderKitCSV(ordersToExport, petProfiles) {
+    const header = "Order ID,Order Date,Customer Name,Customer Email,Customer Company,Order Status,Product,Kit ID,Species,Pet Name,Breed,Gender,DOB,Weight (lbs),Pet Registered";
+    const rows = [];
+    ordersToExport.forEach(order => {
+        const product = order.items.map(i => { const p = OM_PRODUCTS.find(pr => pr.id === i.productId); return p?.name || i.productId; }).join("; ");
+        if (order.bulkKits && order.bulkKits.length > 0) {
+            order.bulkKits.forEach(k => {
+                const pet = petProfiles[k.kitId];
+                rows.push([order.id, order.date, order.customer.name, order.customer.email, order.customer.company || "", order.status, order.bulkProduct || product, k.kitId, pet?.species || "", pet?.name || "", pet?.breed || "", pet?.gender || "", pet?.dob || "", pet?.weight || "", pet ? "Yes" : "No"].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+            });
+        }
+        else {
+            rows.push([order.id, order.date, order.customer.name, order.customer.email, order.customer.company || "", order.status, product, "", "", "", "", "", "", "", "N/A"].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+        }
+    });
+    return header + "\n" + rows.join("\n");
+}
+function OM_buildOrderSummaryCSV(ordersToExport) {
+    const header = "Order ID,Date,Customer,Email,Company,Type,Status,Products,Total Kits,Pets Registered,Subtotal";
+    const rows = ordersToExport.map(o => {
+        const products = o.items.map(i => { const p = OM_PRODUCTS.find(pr => pr.id === i.productId); return `${p?.name || i.productId} x${i.quantity}`; }).join("; ");
+        const subtotal = o.items.reduce((s, i) => s + i.price * i.quantity, 0);
+        const kits = o.bulkKits?.length || 0;
+        return [o.id, o.date, o.customer.name, o.customer.email, o.customer.company || "", o.customer.type, o.status, products, kits, 0, subtotal.toFixed(2)].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",");
+    });
+    return header + "\n" + rows.join("\n");
+}
+const OM_PW_PT = 612, OM_PH_PT = 792;
+function OM_pdfEsc(s) { return String(s).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); }
+function OM_pdfT(x, y, s, sz = 12, bold = false) { return `BT ${bold ? "/F2" : "/F1"} ${sz} Tf ${x} ${y} Td (${OM_pdfEsc(s)}) Tj ET\n`; }
+function OM_pdfR(x, y, w, h) { return `${x} ${y} ${w} ${h} re f\n`; }
+function OM_pdfL(x1, y1, x2, y2, w = 0.5) { return `${w} w ${x1} ${y1} m ${x2} ${y2} l S\n`; }
+function OM_pdfFill(r, g, b) { return `${r} ${g} ${b} rg\n`; }
+function OM_pdfStroke(r, g, b) { return `${r} ${g} ${b} RG\n`; }
+function OM_pdfBarcode128(x, y, kitId, bw = 140, bh = 28) {
+    const bits = OM_encodeCode128B(kitId);
+    const w = bw / bits.length;
+    let d = OM_pdfFill(0, 0, 0);
+    for (let i = 0; i < bits.length; i++) {
+        if (bits[i] === "1")
+            d += OM_pdfR(x + i * w, y, w + 0.08, bh);
+    }
+    return d;
+}
+function OM_buildPDF(pages) {
+    const objs = [];
+    objs.push({ n: 1, d: "<< /Type /Catalog /Pages 2 0 R >>" });
+    objs.push({ n: 3, d: "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>" });
+    objs.push({ n: 4, d: "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>" });
+    const res = "/Font << /F1 3 0 R /F2 4 0 R >>";
+    let pRefs = [], nn = 5;
+    pages.forEach(pg => {
+        const sn = nn, pn = nn + 1;
+        objs.push({ n: sn, d: `<< /Length ${pg.c.length} >>\nstream\n${pg.c}endstream` });
+        objs.push({ n: pn, d: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pg.w || OM_PW_PT} ${pg.h || OM_PH_PT}] /Contents ${sn} 0 R /Resources << ${res} >> >>` });
+        pRefs.push(`${pn} 0 R`);
+        nn += 2;
+    });
+    objs.splice(1, 0, { n: 2, d: `<< /Type /Pages /Kids [${pRefs.join(" ")}] /Count ${pages.length} >>` });
+    objs.sort((a, b) => a.n - b.n);
+    let pdf = "%PDF-1.4\n";
+    const offs = {};
+    objs.forEach(o => { offs[o.n] = pdf.length; pdf += `${o.n} 0 obj\n${o.d}\nendobj\n`; });
+    const mx = Math.max(...objs.map(o => o.n));
+    const xp = pdf.length;
+    pdf += `xref\n0 ${mx + 1}\n0000000000 65535 f \n`;
+    for (let i = 1; i <= mx; i++)
+        pdf += (offs[i] !== undefined ? String(offs[i]).padStart(10, "0") + " 00000 n \n" : "0000000000 00000 f \n");
+    pdf += `trailer\n<< /Size ${mx + 1} /Root 1 0 R >>\nstartxref\n${xp}\n%%EOF`;
+    return pdf;
+}
+function OM_downloadPDF(filename, pages) {
+    const content = OM_buildPDF(pages);
+    const blob = new Blob([content], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+function OM_printOrderContent(order, petProfiles) {
+    const sub = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const tax = sub * 0.0825, total = sub + tax;
+    const M = 50;
+    const pages = [];
+    let c = "", y = OM_PH_PT - M;
+    c += OM_pdfFill(0.05, 0.58, 0.53);
+    c += OM_pdfR(0, OM_PH_PT - 30, OM_PW_PT, 30);
+    c += OM_pdfFill(1, 1, 1);
+    c += OM_pdfT(M, OM_PH_PT - 22, "PetWell Order Report", 14, true);
+    c += OM_pdfFill(0, 0, 0);
+    y -= 30;
+    c += OM_pdfFill(0.42, 0.45, 0.49);
+    c += OM_pdfT(M, y, "Order ID", 8);
+    c += OM_pdfT(200, y, "Date", 8);
+    c += OM_pdfT(350, y, "Status", 8);
+    y -= 16;
+    c += OM_pdfFill(0, 0, 0);
+    c += OM_pdfT(M, y, order.id, 16, true);
+    c += OM_pdfT(200, y, OM_formatDate(order.date), 11);
+    c += OM_pdfT(350, y, order.status, 11, true);
+    y -= 24;
+    c += OM_pdfStroke(0.88, 0.88, 0.88);
+    c += OM_pdfL(M, y, OM_PW_PT - M, y);
+    y -= 18;
+    c += OM_pdfFill(0.05, 0.58, 0.53);
+    c += OM_pdfT(M, y, "Customer", 11, true);
+    y -= 16;
+    c += OM_pdfFill(0, 0, 0);
+    c += OM_pdfT(M, y, order.customer.name + (order.customer.company ? " - " + order.customer.company : ""), 10, true);
+    y -= 14;
+    c += OM_pdfT(M, y, order.customer.email + (order.customer.phone ? "  |  " + order.customer.phone : ""), 9);
+    y -= 14;
+    c += OM_pdfT(M, y, "Type: " + order.customer.type, 9);
+    y -= 14;
+    c += OM_pdfT(M, y, "Ship to: " + order.shippingAddress, 9);
+    y -= 24;
+    c += OM_pdfStroke(0.88, 0.88, 0.88);
+    c += OM_pdfL(M, y, OM_PW_PT - M, y);
+    y -= 18;
+    c += OM_pdfFill(0.05, 0.58, 0.53);
+    c += OM_pdfT(M, y, "Items", 11, true);
+    y -= 18;
+    c += OM_pdfFill(0.94, 0.95, 0.96);
+    c += OM_pdfR(M, y - 2, OM_PW_PT - 2 * M, 16);
+    c += OM_pdfFill(0.42, 0.45, 0.49);
+    c += OM_pdfT(M + 4, y + 2, "Product", 8, true);
+    c += OM_pdfT(350, y + 2, "Qty", 8, true);
+    c += OM_pdfT(410, y + 2, "Price", 8, true);
+    c += OM_pdfT(490, y + 2, "Total", 8, true);
+    y -= 18;
+    c += OM_pdfFill(0, 0, 0);
+    order.items.forEach(item => {
+        const p = OM_PRODUCTS.find(pr => pr.id === item.productId);
+        c += OM_pdfT(M + 4, y, p?.name || item.productId, 9);
+        c += OM_pdfT(358, y, String(item.quantity), 9);
+        c += OM_pdfT(410, y, "$" + item.price.toFixed(2), 9);
+        c += OM_pdfT(490, y, "$" + (item.price * item.quantity).toFixed(2), 9, true);
+        y -= 16;
+        c += OM_pdfStroke(0.94, 0.95, 0.96);
+        c += OM_pdfL(M, y + 4, OM_PW_PT - M, y + 4);
+    });
+    y -= 8;
+    c += OM_pdfFill(0, 0, 0);
+    c += OM_pdfT(410, y, "Subtotal:", 9);
+    c += OM_pdfT(490, y, "$" + sub.toFixed(2), 9, true);
+    y -= 14;
+    c += OM_pdfT(410, y, "Tax (8.25%):", 9);
+    c += OM_pdfT(490, y, "$" + tax.toFixed(2), 9);
+    y -= 18;
+    c += OM_pdfFill(0.05, 0.58, 0.53);
+    c += OM_pdfT(410, y, "TOTAL:", 12, true);
+    c += OM_pdfT(490, y, "$" + total.toFixed(2), 12, true);
+    y -= 24;
+    c += OM_pdfFill(0, 0, 0);
+    if (order.notes) {
+        c += OM_pdfStroke(0.88, 0.88, 0.88);
+        c += OM_pdfL(M, y, OM_PW_PT - M, y);
+        y -= 18;
+        c += OM_pdfFill(0.05, 0.58, 0.53);
+        c += OM_pdfT(M, y, "Notes", 11, true);
+        y -= 16;
+        c += OM_pdfFill(0, 0, 0);
+        c += OM_pdfT(M, y, order.notes.substring(0, 90), 9);
+        if (order.notes.length > 90) {
+            y -= 12;
+            c += OM_pdfT(M, y, order.notes.substring(90, 180), 9);
+        }
+    }
+    c += OM_pdfFill(0.62, 0.64, 0.68);
+    c += OM_pdfT(M, 30, "Generated from PetWell Order Management  |  " + new Date().toLocaleDateString(), 7);
+    pages.push({ c, w: OM_PW_PT, h: OM_PH_PT });
+    if (order.bulkKits && order.bulkKits.length > 0) {
+        const ROWS_PP = 38, kits = order.bulkKits;
+        const regCnt = kits.filter(k => petProfiles[k.kitId]).length;
+        for (let pg = 0; pg < Math.ceil(kits.length / ROWS_PP); pg++) {
+            let pc = "", py = OM_PH_PT - M;
+            pc += OM_pdfFill(0.49, 0.23, 0.93);
+            pc += OM_pdfR(0, OM_PH_PT - 30, OM_PW_PT, 30);
+            pc += OM_pdfFill(1, 1, 1);
+            pc += OM_pdfT(M, OM_PH_PT - 22, `Kit IDs & Pet Registrations - ${order.id}  (${regCnt}/${kits.length} registered)  Page ${pg + 1}/${Math.ceil(kits.length / ROWS_PP)}`, 10, true);
+            pc += OM_pdfFill(0, 0, 0);
+            py -= 30;
+            pc += OM_pdfFill(0.94, 0.95, 0.96);
+            pc += OM_pdfR(M, py - 2, OM_PW_PT - 2 * M, 16);
+            pc += OM_pdfFill(0.42, 0.45, 0.49);
+            pc += OM_pdfT(M + 4, py + 2, "#", 7, true);
+            pc += OM_pdfT(M + 24, py + 2, "Kit ID", 7, true);
+            pc += OM_pdfT(220, py + 2, "Species", 7, true);
+            pc += OM_pdfT(275, py + 2, "Pet Name", 7, true);
+            pc += OM_pdfT(360, py + 2, "Breed", 7, true);
+            pc += OM_pdfT(455, py + 2, "Gender", 7, true);
+            pc += OM_pdfT(520, py + 2, "Weight", 7, true);
+            py -= 16;
+            const start = pg * ROWS_PP, end = Math.min(start + ROWS_PP, kits.length);
+            for (let i = start; i < end; i++) {
+                const kit = kits[i], pet = petProfiles[kit.kitId];
+                if (i % 2 === 0) {
+                    pc += OM_pdfFill(0.98, 0.98, 0.99);
+                    pc += OM_pdfR(M, py - 3, OM_PW_PT - 2 * M, 15);
+                }
+                pc += OM_pdfFill(0.42, 0.45, 0.49);
+                pc += OM_pdfT(M + 4, py, String(kit.index), 7);
+                pc += OM_pdfFill(0.29, 0.11, 0.55);
+                pc += OM_pdfT(M + 24, py, kit.kitId, 7, true);
+                if (pet) {
+                    pc += OM_pdfFill(0, 0, 0);
+                    pc += OM_pdfT(220, py, pet.species, 7);
+                    pc += OM_pdfT(275, py, pet.name, 7);
+                    pc += OM_pdfT(360, py, pet.breed, 7);
+                    pc += OM_pdfT(455, py, pet.gender, 7);
+                    pc += OM_pdfT(520, py, pet.weight + " lbs", 7);
+                }
+                else {
+                    pc += OM_pdfFill(0.75, 0.75, 0.75);
+                    pc += OM_pdfT(220, py, "Not registered", 7);
+                }
+                py -= 15;
+            }
+            pc += OM_pdfFill(0.62, 0.64, 0.68);
+            pc += OM_pdfT(M, 30, "PetWell Kit Registry  |  " + new Date().toLocaleDateString(), 7);
+            pages.push({ c: pc, w: OM_PW_PT, h: OM_PH_PT });
+        }
+    }
+    OM_downloadPDF(`Order-${order.id}.pdf`, pages);
+}
+function OM_printBarcodeSheet(order) {
+    if (!order.bulkKits || order.bulkKits.length === 0)
+        return;
+    const kits = order.bulkKits;
+    const COLS = 3, ROWS = 10, PER_PAGE = 30;
+    const LW = 189, LH = 72, LMT = 36, LML = 13.5, CG = 9;
+    const pages = [];
+    for (let pg = 0; pg < Math.ceil(kits.length / PER_PAGE); pg++) {
+        let c = "";
+        for (let row = 0; row < ROWS; row++) {
+            for (let col = 0; col < COLS; col++) {
+                const idx = pg * PER_PAGE + row * COLS + col;
+                if (idx >= kits.length)
+                    continue;
+                const kit = kits[idx];
+                const lx = LML + col * (LW + CG);
+                const ly = OM_PH_PT - LMT - (row + 1) * LH;
+                c += OM_pdfFill(0.53, 0.53, 0.53);
+                c += OM_pdfT(lx + 4, ly + LH - 10, "PetWell  |  " + (order.bulkProduct || "Test Kit"), 5.5, true);
+                c += OM_pdfBarcode128(lx + 14, ly + 14, kit.kitId, 160, 30);
+                c += OM_pdfFill(0, 0, 0);
+                c += OM_pdfT(lx + 38, ly + 4, kit.kitId, 7, true);
+            }
+        }
+        pages.push({ c, w: OM_PW_PT, h: OM_PH_PT });
+    }
+    OM_downloadPDF(`Barcode-Sheet-${order.id}.pdf`, pages);
+}
+const OM_BULK_KITS = OM_generateBulkKitIds("PW-FF", 500, "2602A");
+const OM_INITIAL_ORDERS = [
+    {
+        id: "PW-BULK-2602A", date: "2026-02-21",
+        customer: { name: "Sarah Mitchell", email: "sarah@goldenpawsbreeding.com", phone: "(555) 234-5678", type: "Breeder", company: "Golden Paws Breeding", customerId: "CUST-001" },
+        items: [{ productId: "kit-feline-fecal", quantity: 500, price: 175.00 }],
+        status: "Confirmed", notes: "Bulk order — 500 Feline Fecal Tests. Kit IDs: PW-FF-2602A-00001 through PW-FF-2602A-00500",
+        shippingAddress: "4521 Oak Valley Dr, Austin, TX 78745",
+        isBulk: true, bulkKits: OM_BULK_KITS, bulkProduct: "Feline Fecal Test",
+    },
+    {
+        id: "PW-M1A2B3", date: "2026-02-18",
+        customer: { name: "Sarah Mitchell", email: "sarah@goldenpawsbreeding.com", phone: "(555) 234-5678", type: "Breeder", company: "Golden Paws Breeding", customerId: "CUST-001" },
+        items: [{ productId: "kit-comprehensive", quantity: 5, price: 149.00 }, { productId: "sub-breeder-monthly", quantity: 1, price: 144.00 }],
+        status: "Processing", notes: "Needs kits by end of month for litter health checks",
+        shippingAddress: "4521 Oak Valley Dr, Austin, TX 78745",
+    },
+    {
+        id: "PW-K4D5E6", date: "2026-02-20",
+        customer: { name: "James Rivera", email: "james.r@email.com", phone: "(555) 876-1234", type: "Pet Parent", company: "", customerId: "CUST-002" },
+        items: [{ productId: "kit-allergy", quantity: 1, price: 119.00 }],
+        status: "Confirmed", notes: "Dog has been scratching a lot, wants allergy panel",
+        shippingAddress: "782 Elm St, Apt 3B, Portland, OR 97205",
+    },
+    {
+        id: "PW-F7G8H9", date: "2026-02-15",
+        customer: { name: "Lisa Chen", email: "lisa@happytailsvet.com", phone: "(555) 345-9876", type: "Breeder", company: "Happy Tails Veterinary", customerId: "CUST-003" },
+        items: [{ productId: "kit-dna", quantity: 10, price: 179.00 }, { productId: "kit-basic", quantity: 10, price: 89.00 }],
+        status: "Shipped", notes: "Bulk order for clinic. Tracking #: 1Z999AA10123456784",
+        shippingAddress: "1200 Medical Center Blvd, Suite 400, Denver, CO 80204",
+    },
+];
+const OM_INITIAL_PET_PROFILES = {
+    "PW-FF-2602A-00001": { species: "Cat", name: "Whiskers", breed: "Domestic Shorthair", gender: "Male", dob: "2023-06-15", weight: "10.2" },
+    "PW-FF-2602A-00002": { species: "Cat", name: "Luna", breed: "Siamese", gender: "Female", dob: "2024-01-20", weight: "8.5" },
+    "PW-FF-2602A-00003": { species: "Dog", name: "Max", breed: "Golden Retriever", gender: "Male", dob: "2022-03-10", weight: "72.0" },
+};
+function OMBadge({ status }) {
+    return React.createElement("span", { className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${OM_STATUS_COLORS[status] || "bg-gray-100 text-gray-800"}` }, status);
+}
+function OMPetStatusBadge({ kitId, petProfiles }) {
+    const profile = petProfiles[kitId];
+    if (profile)
+        return React.createElement("span", { className: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700" }, "Registered");
+    return React.createElement("span", { className: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500" }, "Not Registered");
+}
+function OMPetProfileForm({ kitId, orderProduct, existingProfile, onSave, onBack }) {
+    const [species, setSpecies] = useState(existingProfile?.species || "");
+    const [name, setName] = useState(existingProfile?.name || "");
+    const [breed, setBreed] = useState(existingProfile?.breed || "");
+    const [gender, setGender] = useState(existingProfile?.gender || "");
+    const [dob, setDob] = useState(existingProfile?.dob || "");
+    const [weight, setWeight] = useState(existingProfile?.weight || "");
+    const [saved, setSaved] = useState(false);
+    const breedList = species === "Dog" ? OM_DOG_BREEDS : species === "Cat" ? OM_CAT_BREEDS : [];
+    const isComplete = species && name && breed && gender && dob && weight;
+    const handleSave = () => {
+        if (!isComplete)
+            return;
+        onSave(kitId, { species, name, breed, gender, dob, weight });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+    const inputClass = "w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent";
+    const labelClass = "block text-sm font-medium text-gray-700 mb-1";
+    return (React.createElement("div", { className: "space-y-4" },
+        React.createElement("button", { onClick: onBack, className: "text-sm text-teal-600 hover:text-teal-800 flex items-center gap-1" }, "\u2190 Back to Kit IDs"),
+        React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 shadow-sm p-6" },
+            React.createElement("div", { className: "flex items-start justify-between" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "text-xs text-gray-500 uppercase tracking-wide mb-1" }, "Kit ID"),
+                    React.createElement("p", { className: "text-xl font-mono font-bold text-purple-800" }, kitId),
+                    React.createElement("p", { className: "text-sm text-gray-500 mt-1" }, orderProduct)),
+                React.createElement("div", { className: "text-right" },
+                    React.createElement(OMBarcodeSVG, { value: kitId, width: 180, height: 45 }),
+                    React.createElement("p", { className: "text-xs text-gray-400 mt-1" }, "Scan barcode on test tube")))),
+        React.createElement("div", { className: "bg-white rounded-xl border-2 border-teal-200 shadow-sm" },
+            React.createElement("div", { className: "px-6 py-4 border-b border-teal-100 bg-teal-50 rounded-t-xl flex items-center gap-3" },
+                React.createElement("div", { className: "w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center text-white" },
+                    React.createElement(OMIconPaw, null)),
+                React.createElement("div", null,
+                    React.createElement("h2", { className: "text-lg font-bold text-teal-900" }, "Pet Information"),
+                    React.createElement("p", { className: "text-xs text-teal-600" }, existingProfile ? "Update pet details for this kit" : "Enter pet details for this test tube"))),
+            React.createElement("div", { className: "p-6 space-y-5" },
+                React.createElement("div", null,
+                    React.createElement("label", { className: labelClass }, "Species *"),
+                    React.createElement("div", { className: "flex gap-3" }, ["Dog", "Cat"].map(s => (React.createElement("button", { key: s, onClick: () => { setSpecies(s); setBreed(""); }, className: `flex-1 py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-2 ${species === s ? "border-teal-500 bg-teal-50 text-teal-700" : "border-gray-200 text-gray-500 hover:border-gray-300"}` },
+                        s === "Dog" ? "🐕" : "🐈",
+                        " ",
+                        s))))),
+                React.createElement("div", null,
+                    React.createElement("label", { className: labelClass }, "Pet Name *"),
+                    React.createElement("input", { className: inputClass, value: name, onChange: e => setName(e.target.value), placeholder: "e.g. Whiskers, Buddy, Luna" })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: labelClass }, "Breed *"),
+                    species ? (React.createElement("select", { className: inputClass, value: breed, onChange: e => setBreed(e.target.value) },
+                        React.createElement("option", { value: "" }, "Select breed..."),
+                        breedList.map(b => React.createElement("option", { key: b, value: b }, b)))) : (React.createElement("p", { className: "text-sm text-gray-400 italic py-2" }, "Please select a species first"))),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("label", { className: labelClass }, "Gender *"),
+                        React.createElement("select", { className: inputClass, value: gender, onChange: e => setGender(e.target.value) },
+                            React.createElement("option", { value: "" }, "Select..."),
+                            React.createElement("option", null, "Male"),
+                            React.createElement("option", null, "Female"),
+                            React.createElement("option", null, "Male (Neutered)"),
+                            React.createElement("option", null, "Female (Spayed)"))),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: labelClass }, "Date of Birth *"),
+                        React.createElement("input", { type: "date", className: inputClass, value: dob, onChange: e => setDob(e.target.value), max: new Date().toISOString().split("T")[0] })),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: labelClass }, "Weight (lbs) *"),
+                        React.createElement("input", { type: "number", className: inputClass, value: weight, onChange: e => setWeight(e.target.value), placeholder: "e.g. 10.5", min: "0.1", step: "0.1" }))),
+                isComplete && (React.createElement("div", { className: "bg-teal-50 rounded-lg p-4 border border-teal-200" },
+                    React.createElement("p", { className: "text-xs text-teal-600 uppercase tracking-wide mb-2 font-semibold" }, "Profile Preview"),
+                    React.createElement("div", { className: "flex items-center gap-4" },
+                        React.createElement("div", { className: "w-14 h-14 rounded-xl bg-white border border-teal-200 flex items-center justify-center text-2xl" }, species === "Dog" ? "🐕" : "🐈"),
+                        React.createElement("div", { className: "flex-1 text-sm" },
+                            React.createElement("p", { className: "font-bold text-teal-900 text-base" }, name),
+                            React.createElement("p", { className: "text-teal-700" },
+                                breed,
+                                " \u00B7 ",
+                                gender),
+                            React.createElement("p", { className: "text-teal-600" },
+                                "Born ",
+                                OM_formatDate(dob),
+                                " \u00B7 ",
+                                weight,
+                                " lbs"))))),
+                React.createElement("div", { className: "flex items-center justify-between pt-2" },
+                    React.createElement("p", { className: "text-xs text-gray-400" }, "* All fields required"),
+                    React.createElement("button", { onClick: handleSave, disabled: !isComplete, className: `px-6 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${saved ? "bg-green-600 text-white" : isComplete ? "bg-teal-600 text-white hover:bg-teal-700" : "bg-gray-200 text-gray-400 cursor-not-allowed"}` }, saved ? React.createElement(React.Fragment, null,
+                        React.createElement(OMIconCheck, null),
+                        " Saved!") : React.createElement(React.Fragment, null,
+                        React.createElement(OMIconPaw, null),
+                        " ",
+                        existingProfile ? "Update Profile" : "Save Pet Profile")))))));
+}
+function OMAdminDashboard({ orders, petProfiles }) {
+    const total = orders.length;
+    const revenue = orders.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.price * i.quantity, 0), 0);
+    const pending = orders.filter(o => o.status === "Pending" || o.status === "Confirmed").length;
+    const shipped = orders.filter(o => o.status === "Shipped" || o.status === "Delivered").length;
+    const totalKits = orders.reduce((sum, o) => sum + (o.bulkKits ? o.bulkKits.length : 0), 0);
+    const regKits = Object.keys(petProfiles).length;
+    return (React.createElement("div", null,
+        React.createElement("h2", { className: "text-xl font-bold text-gray-900 mb-4" }, "Admin Dashboard"),
+        React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6" },
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("p", { className: "text-sm text-gray-500 mb-1" }, "Total Orders"),
+                React.createElement("p", { className: "text-2xl font-bold text-teal-700" }, total)),
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("p", { className: "text-sm text-gray-500 mb-1" }, "Revenue"),
+                React.createElement("p", { className: "text-2xl font-bold text-green-700" }, OM_formatCurrency(revenue))),
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("p", { className: "text-sm text-gray-500 mb-1" }, "Needs Attention"),
+                React.createElement("p", { className: "text-2xl font-bold text-amber-600" }, pending),
+                React.createElement("p", { className: "text-xs text-gray-400 mt-1" }, "Pending or Confirmed")),
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("p", { className: "text-sm text-gray-500 mb-1" }, "Fulfilled"),
+                React.createElement("p", { className: "text-2xl font-bold text-blue-700" }, shipped)),
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("p", { className: "text-sm text-gray-500 mb-1" }, "Total Kits"),
+                React.createElement("p", { className: "text-2xl font-bold text-purple-700" }, totalKits)),
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("p", { className: "text-sm text-gray-500 mb-1" }, "Pets Registered"),
+                React.createElement("p", { className: "text-2xl font-bold text-green-700" },
+                    regKits,
+                    " ",
+                    React.createElement("span", { className: "text-sm font-normal text-gray-400" },
+                        "/ ",
+                        totalKits)))),
+        React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("h3", { className: "font-semibold text-gray-800 mb-3" }, "Orders by Status"),
+                React.createElement("div", { className: "space-y-2" }, OM_STATUS_FLOW.map(s => {
+                    const count = orders.filter(o => o.status === s).length;
+                    const pct = total ? (count / total * 100) : 0;
+                    return (React.createElement("div", { key: s, className: "flex items-center gap-3" },
+                        React.createElement("span", { className: "text-sm text-gray-600 w-24" }, s),
+                        React.createElement("div", { className: "flex-1 bg-gray-100 rounded-full h-4 overflow-hidden" },
+                            React.createElement("div", { className: `h-full rounded-full ${s === "Pending" ? "bg-yellow-400" : s === "Confirmed" ? "bg-blue-400" : s === "Processing" ? "bg-purple-400" : s === "Shipped" ? "bg-orange-400" : "bg-green-400"}`, style: { width: `${pct}%` } })),
+                        React.createElement("span", { className: "text-sm font-medium text-gray-700 w-8" }, count)));
+                }))),
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 p-5 shadow-sm" },
+                React.createElement("h3", { className: "font-semibold text-gray-800 mb-3" }, "Bulk Orders"),
+                orders.filter(o => o.isBulk).length === 0 ? React.createElement("p", { className: "text-sm text-gray-400 mt-4" }, "No bulk orders yet") : (React.createElement("div", { className: "space-y-3 mt-2" }, orders.filter(o => o.isBulk).map(o => {
+                    const regCount = o.bulkKits ? o.bulkKits.filter(k => petProfiles[k.kitId]).length : 0;
+                    return (React.createElement("div", { key: o.id, className: "flex items-center justify-between bg-purple-50 rounded-lg p-3" },
+                        React.createElement("div", null,
+                            React.createElement("p", { className: "text-sm font-medium text-purple-800" }, o.id),
+                            React.createElement("p", { className: "text-xs text-purple-600" },
+                                o.bulkProduct,
+                                " \u2014 ",
+                                regCount,
+                                "/",
+                                o.bulkKits?.length,
+                                " registered")),
+                        React.createElement(OMBadge, { status: o.status })));
+                })))))));
+}
+function OMAdminOrderList({ orders, onSelectOrder, petProfiles }) {
+    const [search, setSearch] = useState("");
+    const [filterStatus, setFilterStatus] = useState("All");
+    const filtered = orders
+        .filter(o => filterStatus === "All" || o.status === filterStatus)
+        .filter(o => { const q = search.toLowerCase(); return !q || o.id.toLowerCase().includes(q) || o.customer.name.toLowerCase().includes(q) || o.customer.email.toLowerCase().includes(q); });
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "flex flex-wrap items-center gap-3 mb-4" },
+            React.createElement("div", { className: "relative flex-1 min-w-48" },
+                React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" },
+                    React.createElement(OMIconSearch, null)),
+                React.createElement("input", { className: "w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500", placeholder: "Search orders...", value: search, onChange: e => setSearch(e.target.value) })),
+            React.createElement("select", { className: "px-3 py-2 border border-gray-300 rounded-lg text-sm", value: filterStatus, onChange: e => setFilterStatus(e.target.value) },
+                React.createElement("option", null, "All"),
+                OM_STATUS_FLOW.map(s => React.createElement("option", { key: s }, s)),
+                React.createElement("option", null, "Cancelled")),
+            React.createElement("button", { onClick: () => { const csv = OM_buildOrderKitCSV(filtered, petProfiles); OM_downloadCSV(`PetWell-All-Orders-Kits-Pets-${new Date().toISOString().slice(0, 10)}.csv`, csv); }, className: "px-3 py-2 bg-white border border-teal-300 text-teal-700 text-sm rounded-lg hover:bg-teal-50 flex items-center gap-1.5 shadow-sm" },
+                React.createElement(OMIconCSV, null),
+                " Export All CSV"),
+            React.createElement("button", { onClick: () => { const csv = OM_buildOrderSummaryCSV(filtered); OM_downloadCSV(`PetWell-Order-Summary-${new Date().toISOString().slice(0, 10)}.csv`, csv); }, className: "px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm" },
+                React.createElement(OMIconDownload, null),
+                " Summary CSV")),
+        filtered.length === 0 ? React.createElement("div", { className: "text-center py-12 text-gray-400" },
+            React.createElement("p", { className: "text-lg" }, "No orders found")) : (React.createElement("div", { className: "space-y-2" }, filtered.map(order => {
+            const total = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+            return (React.createElement("div", { key: order.id, onClick: () => onSelectOrder(order.id), className: "bg-white rounded-xl border border-gray-200 shadow-sm p-4 cursor-pointer hover:border-teal-300 hover:shadow-md transition-all" },
+                React.createElement("div", { className: "flex items-center justify-between" },
+                    React.createElement("div", { className: "flex items-center gap-4" },
+                        React.createElement("div", null,
+                            React.createElement("div", { className: "flex items-center gap-2" },
+                                React.createElement("p", { className: "font-semibold text-gray-900" }, order.id),
+                                order.isBulk && React.createElement("span", { className: "px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded" }, "BULK")),
+                            React.createElement("p", { className: "text-sm text-gray-500" }, OM_formatDate(order.date))),
+                        React.createElement("div", { className: "hidden sm:block border-l border-gray-200 pl-4" },
+                            React.createElement("p", { className: "text-sm font-medium text-gray-800" }, order.customer.name),
+                            React.createElement("p", { className: "text-xs text-gray-500" },
+                                order.customer.type,
+                                order.customer.company ? ` · ${order.customer.company}` : "",
+                                order.isBulk ? ` · ${order.bulkKits?.length || 0} kits` : ""))),
+                    React.createElement("div", { className: "flex items-center gap-4" },
+                        React.createElement("div", { className: "text-right hidden sm:block" },
+                            React.createElement("p", { className: "font-semibold text-gray-900" }, OM_formatCurrency(total))),
+                        React.createElement(OMBadge, { status: order.status })))));
+        })))));
+}
+function OMAdminOrderDetail({ order, onBack, onUpdateStatus, onCancel, petProfiles, onViewKit }) {
+    const [kitSearch, setKitSearch] = useState("");
+    const [kitPage, setKitPage] = useState(0);
+    const KITS_PER_PAGE = 25;
+    const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const currentIdx = OM_STATUS_FLOW.indexOf(order.status);
+    const canAdvance = currentIdx >= 0 && currentIdx < OM_STATUS_FLOW.length - 1 && order.status !== "Cancelled";
+    const nextStatus = canAdvance ? OM_STATUS_FLOW[currentIdx + 1] : null;
+    const exportCSV = () => {
+        if (!order.bulkKits)
+            return;
+        const rows = order.bulkKits.map(k => {
+            const p = petProfiles[k.kitId];
+            return `${k.kitId},${k.kitId},${order.id},${order.bulkProduct},${p ? p.species : ""},${p ? p.name : ""},${p ? p.breed : ""},${p ? p.gender : ""},${p ? p.dob : ""},${p ? p.weight : ""}`;
+        });
+        const csv = "Kit ID,Barcode,Order ID,Product,Species,Pet Name,Breed,Gender,DOB,Weight (lbs)\n" + rows.join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${order.id}-kits-and-pets.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    return (React.createElement("div", { className: "space-y-4" },
+        React.createElement("button", { onClick: onBack, className: "text-sm text-teal-600 hover:text-teal-800 flex items-center gap-1" }, "\u2190 Back to orders"),
+        React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 shadow-sm p-6" },
+            React.createElement("div", { className: "flex flex-wrap items-start justify-between gap-4" },
+                React.createElement("div", null,
+                    React.createElement("div", { className: "flex items-center gap-2" },
+                        React.createElement("h2", { className: "text-xl font-bold text-gray-900" },
+                            "Order ",
+                            order.id),
+                        order.isBulk && React.createElement("span", { className: "px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full" }, "BULK")),
+                    React.createElement("p", { className: "text-sm text-gray-500 mt-1" },
+                        "Placed ",
+                        OM_formatDate(order.date))),
+                React.createElement("div", { className: "flex items-center gap-3" },
+                    React.createElement(OMBadge, { status: order.status }),
+                    canAdvance && React.createElement("button", { onClick: () => onUpdateStatus(order.id, nextStatus), className: "px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 flex items-center gap-1.5" },
+                        React.createElement(OMIconDownload, null),
+                        " ",
+                        nextStatus),
+                    order.status !== "Cancelled" && order.status !== "Delivered" && React.createElement("button", { onClick: () => onCancel(order.id), className: "px-4 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100" }, "Cancel"))),
+            order.status !== "Cancelled" && (React.createElement("div", { className: "mt-5" },
+                React.createElement("div", { className: "flex items-center" }, OM_STATUS_FLOW.map((s, i) => { const done = i <= currentIdx; return (React.createElement("div", { key: s, className: "flex items-center flex-1" },
+                    React.createElement("div", { className: `w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${done ? "bg-teal-600 text-white" : "bg-gray-200 text-gray-400"}` }, done ? React.createElement(OMIconCheck, null) : i + 1),
+                    i < OM_STATUS_FLOW.length - 1 && React.createElement("div", { className: `flex-1 h-0.5 mx-1 ${i < currentIdx ? "bg-teal-600" : "bg-gray-200"}` }))); })),
+                React.createElement("div", { className: "flex mt-1" }, OM_STATUS_FLOW.map(s => React.createElement("div", { key: s, className: "flex-1 text-center" },
+                    React.createElement("span", { className: "text-xs text-gray-400" }, s))))))),
+        React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 shadow-sm p-5" },
+                React.createElement("h3", { className: "font-semibold text-gray-800 mb-3" }, "Customer"),
+                React.createElement("div", { className: "space-y-2 text-sm" },
+                    React.createElement("p", null,
+                        React.createElement("span", { className: "text-gray-500" }, "Name:"),
+                        " ",
+                        React.createElement("span", { className: "font-medium" }, order.customer.name)),
+                    React.createElement("p", null,
+                        React.createElement("span", { className: "text-gray-500" }, "Email:"),
+                        " ",
+                        order.customer.email),
+                    order.customer.phone && React.createElement("p", null,
+                        React.createElement("span", { className: "text-gray-500" }, "Phone:"),
+                        " ",
+                        order.customer.phone),
+                    React.createElement("p", null,
+                        React.createElement("span", { className: "text-gray-500" }, "Type:"),
+                        " ",
+                        order.customer.type),
+                    order.customer.company && React.createElement("p", null,
+                        React.createElement("span", { className: "text-gray-500" }, "Company:"),
+                        " ",
+                        order.customer.company))),
+            React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 shadow-sm p-5" },
+                React.createElement("h3", { className: "font-semibold text-gray-800 mb-3" }, "Shipping & Notes"),
+                React.createElement("p", { className: "text-sm text-gray-700" }, order.shippingAddress),
+                order.notes && React.createElement("div", { className: "mt-3 pt-3 border-t border-gray-100" },
+                    React.createElement("p", { className: "text-sm text-gray-700" }, order.notes)))),
+        React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 shadow-sm p-5" },
+            React.createElement("h3", { className: "font-semibold text-gray-800 mb-3" }, "Invoice"),
+            React.createElement("table", { className: "w-full text-sm" },
+                React.createElement("thead", null,
+                    React.createElement("tr", { className: "text-left text-gray-500 border-b" },
+                        React.createElement("th", { className: "pb-2 font-medium" }, "Product"),
+                        React.createElement("th", { className: "pb-2 font-medium text-center" }, "Qty"),
+                        React.createElement("th", { className: "pb-2 font-medium text-right" }, "Price"),
+                        React.createElement("th", { className: "pb-2 font-medium text-right" }, "Total"))),
+                React.createElement("tbody", null, order.items.map((item, i) => { const p = OM_PRODUCTS.find(pr => pr.id === item.productId); return (React.createElement("tr", { key: i, className: "border-b border-gray-100" },
+                    React.createElement("td", { className: "py-3" }, p?.name || item.productId),
+                    React.createElement("td", { className: "py-3 text-center" }, item.quantity),
+                    React.createElement("td", { className: "py-3 text-right" }, OM_formatCurrency(item.price)),
+                    React.createElement("td", { className: "py-3 text-right font-medium" }, OM_formatCurrency(item.price * item.quantity)))); }))),
+            React.createElement("div", { className: "mt-4 pt-3 border-t text-right space-y-1" },
+                React.createElement("p", { className: "text-sm text-gray-500" },
+                    "Subtotal: ",
+                    React.createElement("span", { className: "text-gray-800 font-medium" }, OM_formatCurrency(subtotal))),
+                React.createElement("p", { className: "text-sm text-gray-500" },
+                    "Tax (8.25%): ",
+                    React.createElement("span", { className: "text-gray-800 font-medium" }, OM_formatCurrency(subtotal * 0.0825))),
+                React.createElement("p", { className: "text-lg font-bold text-teal-700 mt-2" },
+                    "Total: ",
+                    OM_formatCurrency(subtotal * 1.0825)))),
+        order.isBulk && order.bulkKits && (React.createElement("div", { className: "bg-white rounded-xl border-2 border-purple-200 shadow-sm" },
+            React.createElement("div", { className: "px-5 py-4 border-b border-purple-100 bg-purple-50 rounded-t-xl" },
+                React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3" },
+                    React.createElement("div", null,
+                        React.createElement("h3", { className: "font-semibold text-purple-900 flex items-center gap-2" },
+                            React.createElement(OMIconBoxes, null),
+                            " Kit IDs & Pet Registrations"),
+                        React.createElement("p", { className: "text-xs text-purple-600 mt-0.5" },
+                            order.bulkKits.filter(k => petProfiles[k.kitId]).length,
+                            " of ",
+                            order.bulkKits.length,
+                            " kits have registered pets")),
+                    React.createElement("div", { className: "flex items-center gap-2" },
+                        React.createElement("button", { onClick: exportCSV, className: "px-3 py-1.5 bg-white border border-purple-300 text-purple-700 text-xs rounded-lg hover:bg-purple-50 flex items-center gap-1" },
+                            React.createElement(OMIconDownload, null),
+                            " Export CSV"),
+                        React.createElement("button", { onClick: () => OM_printBarcodeSheet(order), className: "px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 flex items-center gap-1" },
+                            React.createElement(OMIconDownload, null),
+                            " Barcode Sheet"),
+                        React.createElement("button", { onClick: () => OM_printOrderContent(order, petProfiles), className: "px-3 py-1.5 bg-white border border-purple-300 text-purple-700 text-xs rounded-lg hover:bg-purple-50 flex items-center gap-1" },
+                            React.createElement(OMIconDownload, null),
+                            " Print Order"))),
+                React.createElement("div", { className: "mt-3 relative" },
+                    React.createElement("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" },
+                        React.createElement(OMIconSearch, null)),
+                    React.createElement("input", { className: "w-full pl-9 pr-3 py-2 border border-purple-200 rounded-lg text-sm bg-white", placeholder: "Search kit IDs or pet names...", value: kitSearch, onChange: e => { setKitSearch(e.target.value); setKitPage(0); } }))),
+            React.createElement("div", { className: "p-4" }, (() => {
+                const filtered = order.bulkKits.filter(k => {
+                    const q = kitSearch.toLowerCase();
+                    if (!q)
+                        return true;
+                    if (k.kitId.toLowerCase().includes(q))
+                        return true;
+                    const profile = petProfiles[k.kitId];
+                    if (profile && profile.name.toLowerCase().includes(q))
+                        return true;
+                    return false;
+                });
+                const totalPages = Math.ceil(filtered.length / KITS_PER_PAGE);
+                const pageKits = filtered.slice(kitPage * KITS_PER_PAGE, (kitPage + 1) * KITS_PER_PAGE);
+                return (React.createElement(React.Fragment, null,
+                    React.createElement("table", { className: "w-full text-sm" },
+                        React.createElement("thead", null,
+                            React.createElement("tr", { className: "text-left text-gray-500 border-b" },
+                                React.createElement("th", { className: "pb-2 font-medium w-10" }, "#"),
+                                React.createElement("th", { className: "pb-2 font-medium" }, "Kit ID"),
+                                React.createElement("th", { className: "pb-2 font-medium" }, "Barcode"),
+                                React.createElement("th", { className: "pb-2 font-medium" }, "Pet"),
+                                React.createElement("th", { className: "pb-2 font-medium" }, "Status"))),
+                        React.createElement("tbody", null, pageKits.map(kit => {
+                            const profile = petProfiles[kit.kitId];
+                            return (React.createElement("tr", { key: kit.kitId, className: "border-b border-gray-50 hover:bg-teal-50 cursor-pointer transition-colors", onClick: () => onViewKit(kit.kitId) },
+                                React.createElement("td", { className: "py-2 text-gray-400 text-xs" }, kit.index),
+                                React.createElement("td", { className: "py-2" },
+                                    React.createElement("span", { className: "font-mono text-sm font-medium text-purple-800 bg-purple-50 px-2 py-0.5 rounded hover:bg-teal-100 hover:text-teal-800 transition-colors" }, kit.kitId)),
+                                React.createElement("td", { className: "py-2" },
+                                    React.createElement(OMBarcodeSVG, { value: kit.kitId, width: 130, height: 28 })),
+                                React.createElement("td", { className: "py-2" }, profile ? React.createElement("span", { className: "text-sm" },
+                                    profile.species === "Dog" ? "🐕" : "🐈",
+                                    " ",
+                                    profile.name,
+                                    " \u00B7 ",
+                                    profile.breed) : React.createElement("span", { className: "text-xs text-gray-400 italic" }, "Click to view")),
+                                React.createElement("td", { className: "py-2" },
+                                    React.createElement(OMPetStatusBadge, { kitId: kit.kitId, petProfiles: petProfiles }))));
+                        }))),
+                    totalPages > 1 && (React.createElement("div", { className: "flex items-center justify-between mt-4 pt-3 border-t" },
+                        React.createElement("p", { className: "text-xs text-gray-500" },
+                            kitPage * KITS_PER_PAGE + 1,
+                            "\u2013",
+                            Math.min((kitPage + 1) * KITS_PER_PAGE, filtered.length),
+                            " of ",
+                            filtered.length),
+                        React.createElement("div", { className: "flex gap-2" },
+                            React.createElement("button", { onClick: () => setKitPage(Math.max(0, kitPage - 1)), disabled: kitPage === 0, className: "px-3 py-1 text-sm border rounded disabled:opacity-30" }, "Prev"),
+                            React.createElement("span", { className: "text-sm text-gray-600" },
+                                "Page ",
+                                kitPage + 1,
+                                "/",
+                                totalPages),
+                            React.createElement("button", { onClick: () => setKitPage(Math.min(totalPages - 1, kitPage + 1)), disabled: kitPage >= totalPages - 1, className: "px-3 py-1 text-sm border rounded disabled:opacity-30" }, "Next"))))));
+            })())))));
+}
+function OMBulkOrderForm({ onSubmit, onCancel }) {
+    const [customer, setCustomer] = useState({ name: "", email: "", phone: "", type: "Internal", company: "", customerId: "" });
+    const [product, setProduct] = useState("kit-feline-fecal");
+    const [quantity, setQuantity] = useState(500);
+    const [notes, setNotes] = useState("");
+    const [address, setAddress] = useState("");
+    const [generating, setGenerating] = useState(false);
+    const ic = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500";
+    const lc = "block text-sm font-medium text-gray-700 mb-1";
+    const productObj = OM_PRODUCTS.find(p => p.id === product);
+    const subtotal = (productObj?.price || 0) * quantity;
+    const handleSubmit = () => {
+        if (!customer.name || !customer.email || !address || quantity < 1)
+            return;
+        setGenerating(true);
+        const now = new Date();
+        const bc = `${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
+        const pm = { "kit-feline-fecal": "PW-FF", "kit-basic": "PW-BH", "kit-comprehensive": "PW-CH", "kit-allergy": "PW-AS", "kit-dna": "PW-DN" };
+        const kits = OM_generateBulkKitIds(pm[product] || "PW-KT", quantity, bc);
+        const matchedUser = OM_USERS.find(u => u.email.toLowerCase() === customer.email.toLowerCase());
+        const custId = matchedUser?.customerId || customer.customerId || `CUST-${Date.now().toString(36)}`;
+        setTimeout(() => {
+            onSubmit({
+                id: `PW-BULK-${bc}`, date: now.toISOString().split("T")[0],
+                customer: { ...customer, customerId: custId },
+                items: [{ productId: product, quantity, price: productObj?.price || 0 }],
+                status: "Pending", notes: notes || `Bulk order — ${quantity} ${productObj?.name}`,
+                shippingAddress: address, isBulk: true, bulkKits: kits, bulkProduct: productObj?.name || product,
+            });
+            setGenerating(false);
+        }, 600);
+    };
+    return (React.createElement("div", { className: "bg-white rounded-xl border-2 border-purple-200 shadow-sm" },
+        React.createElement("div", { className: "px-6 py-4 border-b border-purple-100 bg-purple-50 rounded-t-xl flex items-center justify-between" },
+            React.createElement("div", { className: "flex items-center gap-3" },
+                React.createElement("div", { className: "w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white" },
+                    React.createElement(OMIconBoxes, null)),
+                React.createElement("div", null,
+                    React.createElement("h2", { className: "text-lg font-bold text-purple-900" }, "Create Bulk Order"),
+                    React.createElement("p", { className: "text-xs text-purple-600" }, "Auto-generates unique Kit IDs with barcodes"))),
+            React.createElement("button", { onClick: onCancel, className: "text-gray-400 hover:text-gray-600" },
+                React.createElement(OMIconX, null))),
+        React.createElement("div", { className: "p-6 space-y-6" },
+            React.createElement("div", null,
+                React.createElement("h3", { className: "text-sm font-semibold text-gray-800 mb-3 uppercase tracking-wide" }, "Customer / Assignee"),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("label", { className: lc }, "Name *"),
+                        React.createElement("input", { className: ic, value: customer.name, onChange: e => setCustomer({ ...customer, name: e.target.value }), placeholder: "Customer name" })),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: lc }, "Email *"),
+                        React.createElement("input", { className: ic, type: "email", value: customer.email, onChange: e => setCustomer({ ...customer, email: e.target.value }), placeholder: "customer@email.com" })),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: lc }, "Type"),
+                        React.createElement("select", { className: ic, value: customer.type, onChange: e => setCustomer({ ...customer, type: e.target.value }) },
+                            React.createElement("option", null, "Internal"),
+                            React.createElement("option", null, "Breeder"),
+                            React.createElement("option", null, "Pet Parent"),
+                            React.createElement("option", null, "Distributor"))),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: lc }, "Company"),
+                        React.createElement("input", { className: ic, value: customer.company, onChange: e => setCustomer({ ...customer, company: e.target.value }), placeholder: "Company name" })))),
+            React.createElement("div", null,
+                React.createElement("h3", { className: "text-sm font-semibold text-gray-800 mb-3 uppercase tracking-wide" }, "Product & Quantity"),
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("label", { className: lc }, "Product *"),
+                        React.createElement("select", { className: ic, value: product, onChange: e => setProduct(e.target.value) }, OM_PRODUCTS.filter(p => p.category === "A la Carte").map(p => React.createElement("option", { key: p.id, value: p.id },
+                            p.name,
+                            " \u2014 ",
+                            OM_formatCurrency(p.price))))),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: lc }, "Quantity *"),
+                        React.createElement("input", { className: ic, type: "number", min: "1", max: "10000", value: quantity, onChange: e => setQuantity(Math.max(1, parseInt(e.target.value) || 1)) }))),
+                React.createElement("div", { className: "mt-3 bg-purple-50 rounded-lg p-3" },
+                    React.createElement("p", { className: "text-sm text-purple-700" },
+                        React.createElement("span", { className: "font-semibold" }, quantity),
+                        " unique Kit IDs will be auto-generated. Customer will be able to register pets via their portal."))),
+            React.createElement("div", { className: "space-y-4" },
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Ship To *"),
+                    React.createElement("input", { className: ic, value: address, onChange: e => setAddress(e.target.value), placeholder: "Shipping address" })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Notes"),
+                    React.createElement("textarea", { className: ic + " h-20 resize-none", value: notes, onChange: e => setNotes(e.target.value) }))),
+            React.createElement("div", { className: "bg-purple-50 rounded-lg p-4 flex items-center justify-between" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "text-sm text-purple-700" },
+                        "Total (",
+                        quantity,
+                        " kits)"),
+                    React.createElement("p", { className: "text-2xl font-bold text-purple-800" }, OM_formatCurrency(subtotal))),
+                React.createElement("button", { onClick: handleSubmit, disabled: !customer.name || !customer.email || !address || generating, className: "px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2" }, generating ? React.createElement(React.Fragment, null,
+                    React.createElement("span", { className: "animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" }),
+                    " Generating...") : React.createElement(React.Fragment, null,
+                    React.createElement(OMIconBoxes, null),
+                    " Create Bulk Order"))))));
+}
+function OMNewOrderForm({ onSubmit, onCancel }) {
+    const [customer, setCustomer] = useState({ name: "", email: "", phone: "", type: "Pet Parent", company: "", customerId: "" });
+    const [items, setItems] = useState([{ productId: "", quantity: 1 }]);
+    const [notes, setNotes] = useState("");
+    const [address, setAddress] = useState("");
+    const ic = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500";
+    const lc = "block text-sm font-medium text-gray-700 mb-1";
+    const addItem = () => setItems([...items, { productId: "", quantity: 1 }]);
+    const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
+    const updateItem = (i, f, v) => { const u = [...items]; u[i] = { ...u[i], [f]: f === "quantity" ? Math.max(1, parseInt(v) || 1) : v }; setItems(u); };
+    const subtotal = items.reduce((s, it) => { const p = OM_PRODUCTS.find(pr => pr.id === it.productId); return s + (p ? p.price * it.quantity : 0); }, 0);
+    const handleSubmit = () => {
+        if (!customer.name || !customer.email || !address || items.some(i => !i.productId))
+            return;
+        const matchedUser = OM_USERS.find(u => u.email.toLowerCase() === customer.email.toLowerCase());
+        onSubmit({ id: OM_generateOrderId(), date: new Date().toISOString().split("T")[0], customer: { ...customer, customerId: matchedUser?.customerId || `CUST-${Date.now().toString(36)}` }, items: items.map(i => ({ ...i, price: OM_PRODUCTS.find(p => p.id === i.productId)?.price || 0 })), status: "Pending", notes, shippingAddress: address });
+    };
+    return (React.createElement("div", { className: "bg-white rounded-xl border border-gray-200 shadow-sm" },
+        React.createElement("div", { className: "px-6 py-4 border-b flex items-center justify-between" },
+            React.createElement("h2", { className: "text-lg font-bold text-gray-900" }, "New Standard Order"),
+            React.createElement("button", { onClick: onCancel, className: "text-gray-400 hover:text-gray-600" },
+                React.createElement(OMIconX, null))),
+        React.createElement("div", { className: "p-6 space-y-6" },
+            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Name *"),
+                    React.createElement("input", { className: ic, value: customer.name, onChange: e => setCustomer({ ...customer, name: e.target.value }) })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Email *"),
+                    React.createElement("input", { className: ic, type: "email", value: customer.email, onChange: e => setCustomer({ ...customer, email: e.target.value }) })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Phone"),
+                    React.createElement("input", { className: ic, value: customer.phone, onChange: e => setCustomer({ ...customer, phone: e.target.value }) })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Type *"),
+                    React.createElement("select", { className: ic, value: customer.type, onChange: e => setCustomer({ ...customer, type: e.target.value }) },
+                        React.createElement("option", null, "Pet Parent"),
+                        React.createElement("option", null, "Breeder")))),
+            React.createElement("div", { className: "space-y-3" },
+                items.map((item, i) => (React.createElement("div", { key: i, className: "flex items-end gap-3 bg-gray-50 rounded-lg p-3" },
+                    React.createElement("div", { className: "flex-1" },
+                        React.createElement("label", { className: lc }, "Product *"),
+                        React.createElement("select", { className: ic, value: item.productId, onChange: e => updateItem(i, "productId", e.target.value) },
+                            React.createElement("option", { value: "" }, "Select..."),
+                            React.createElement("optgroup", { label: "Kits" }, OM_PRODUCTS.filter(p => p.category === "A la Carte").map(p => React.createElement("option", { key: p.id, value: p.id },
+                                p.name,
+                                " \u2014 ",
+                                OM_formatCurrency(p.price)))),
+                            React.createElement("optgroup", { label: "Subs" }, OM_PRODUCTS.filter(p => p.category === "Subscription").map(p => React.createElement("option", { key: p.id, value: p.id },
+                                p.name,
+                                " \u2014 ",
+                                OM_formatCurrency(p.price),
+                                "/mo"))))),
+                    React.createElement("div", { className: "w-20" },
+                        React.createElement("label", { className: lc }, "Qty"),
+                        React.createElement("input", { className: ic, type: "number", min: "1", value: item.quantity, onChange: e => updateItem(i, "quantity", e.target.value) })),
+                    React.createElement("div", { className: "w-20 text-right pb-2 text-sm font-medium" }, OM_formatCurrency((OM_PRODUCTS.find(p => p.id === item.productId)?.price || 0) * item.quantity)),
+                    items.length > 1 && React.createElement("button", { onClick: () => removeItem(i), className: "pb-2 text-red-400" },
+                        React.createElement(OMIconTrash, null))))),
+                React.createElement("button", { onClick: addItem, className: "text-sm text-teal-600 flex items-center gap-1" },
+                    React.createElement(OMIconPlus, null),
+                    " Add item")),
+            React.createElement("div", { className: "space-y-4" },
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Address *"),
+                    React.createElement("input", { className: ic, value: address, onChange: e => setAddress(e.target.value) })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: lc }, "Notes"),
+                    React.createElement("textarea", { className: ic + " h-20 resize-none", value: notes, onChange: e => setNotes(e.target.value) }))),
+            React.createElement("div", { className: "bg-teal-50 rounded-lg p-4 flex items-center justify-between" },
+                React.createElement("div", null,
+                    React.createElement("p", { className: "text-sm text-teal-700" }, "Subtotal"),
+                    React.createElement("p", { className: "text-2xl font-bold text-teal-800" }, OM_formatCurrency(subtotal))),
+                React.createElement("button", { onClick: handleSubmit, disabled: !customer.name || !customer.email || !address || items.some(i => !i.productId), className: "px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed" }, "Create Order")))));
+}
+function OrderManagerPage({ initialView }) {
+    const OMIconChart = () => React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+        React.createElement("path", { d: "M3 3v18h18" }),
+        React.createElement("path", { d: "m19 9-5 5-4-4-3 3" }));
+    const [orders, setOrders] = useState(OM_INITIAL_ORDERS);
+    const [petProfiles, setPetProfiles] = useState(OM_INITIAL_PET_PROFILES);
+    const [view, setView] = useState(initialView || "dashboard");
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [selectedKitId, setSelectedKitId] = useState(null);
+    const [orderType, setOrderType] = useState(null);
+    const [toast, setToast] = useState(null);
+    const showToast = (m) => { setToast(m); setTimeout(() => setToast(null), 3000); };
+    const selectedOrder = orders.find(o => o.id === selectedOrderId);
+    const handleNewOrder = (order) => { setOrders([order, ...orders]); setView("orders"); setOrderType(null); showToast(`Order ${order.id} created!`); };
+    const handleUpdateStatus = (id, s) => { setOrders(orders.map(o => o.id === id ? { ...o, status: s } : o)); showToast(`${id} → ${s}`); };
+    const handleCancel = (id) => { setOrders(orders.map(o => o.id === id ? { ...o, status: "Cancelled" } : o)); showToast(`${id} cancelled`); };
+    const handleSavePetProfile = (kitId, profile) => { setPetProfiles(prev => ({ ...prev, [kitId]: profile })); showToast(`Pet profile saved!`); };
+    const navItems = [
+        { key: "dashboard", label: "Dashboard", icon: React.createElement(OMIconChart, null) },
+        { key: "orders", label: "Orders", icon: React.createElement(OMIconList, null) },
+        { key: "new", label: "New Order", icon: React.createElement(OMIconPlus, null) },
+    ];
+    return (React.createElement("div", { className: "bg-gray-50" },
+        toast && React.createElement("div", { className: "fixed top-4 right-4 z-50 bg-teal-600 text-white px-5 py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm" },
+            React.createElement(OMIconCheck, null),
+            " ",
+            toast),
+        React.createElement("nav", { className: "flex gap-1 mb-6 bg-white rounded-lg border border-gray-200 p-1 shadow-sm" }, navItems.map(item => (React.createElement("button", { key: item.key, onClick: () => { setView(item.key); setSelectedOrderId(null); setSelectedKitId(null); setOrderType(null); }, className: `flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === item.key || (item.key === "orders" && (view === "detail" || view === "petProfile")) ? "bg-teal-50 text-teal-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}` },
+            item.icon,
+            " ",
+            React.createElement("span", { className: "hidden sm:inline" }, item.label))))),
+        view === "dashboard" && React.createElement(OMAdminDashboard, { orders: orders, petProfiles: petProfiles }),
+        view === "orders" && React.createElement(OMAdminOrderList, { orders: orders, onSelectOrder: (id) => { setSelectedOrderId(id); setView("detail"); }, petProfiles: petProfiles }),
+        view === "new" && !orderType && (React.createElement("div", null,
+            React.createElement("h2", { className: "text-xl font-bold text-gray-900 mb-4" }, "Create New Order"),
+            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                React.createElement("button", { onClick: () => setOrderType("standard"), className: "bg-white rounded-xl border-2 border-gray-200 hover:border-teal-400 shadow-sm p-8 text-left transition-all hover:shadow-md" },
+                    React.createElement("div", { className: "w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center text-teal-600 mb-4" },
+                        React.createElement(OMIconPackage, null)),
+                    React.createElement("h3", { className: "text-lg font-bold text-gray-900 mb-2" }, "Standard Order"),
+                    React.createElement("p", { className: "text-sm text-gray-500" }, "Regular customer order")),
+                React.createElement("button", { onClick: () => setOrderType("bulk"), className: "bg-white rounded-xl border-2 border-gray-200 hover:border-purple-400 shadow-sm p-8 text-left transition-all hover:shadow-md" },
+                    React.createElement("div", { className: "w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 mb-4" },
+                        React.createElement(OMIconBoxes, null)),
+                    React.createElement("h3", { className: "text-lg font-bold text-gray-900 mb-2" }, "Bulk Order"),
+                    React.createElement("p", { className: "text-sm text-gray-500" }, "Auto-generate Kit IDs with barcodes"))))),
+        view === "new" && orderType === "standard" && React.createElement(OMNewOrderForm, { onSubmit: handleNewOrder, onCancel: () => setOrderType(null) }),
+        view === "new" && orderType === "bulk" && React.createElement(OMBulkOrderForm, { onSubmit: handleNewOrder, onCancel: () => setOrderType(null) }),
+        view === "detail" && selectedOrder && !selectedKitId && React.createElement(OMAdminOrderDetail, { order: selectedOrder, onBack: () => setView("orders"), onUpdateStatus: handleUpdateStatus, onCancel: handleCancel, petProfiles: petProfiles, onViewKit: (kitId) => { setSelectedKitId(kitId); setView("petProfile"); } }),
+        view === "petProfile" && selectedKitId && selectedOrder && (React.createElement(OMPetProfileForm, { kitId: selectedKitId, orderProduct: selectedOrder.bulkProduct || "Test Kit", existingProfile: petProfiles[selectedKitId], onSave: handleSavePetProfile, onBack: () => { setSelectedKitId(null); setView("detail"); } }))));
+}
+// ═══════════════════════════════════════
+// ADMIN PANEL SHELL (lightweight)
+// ═══════════════════════════════════════
+const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "orders", label: "Orders", icon: Package },
+    { id: "newOrder", label: "New Order", icon: Plus },
+    { id: "customers", label: "Customers", icon: Users },
+    { id: "results", label: "Lab Results", icon: Microscope },
+    { id: "vetPartners", label: "Vet Partners", icon: Stethoscope },
+    { id: "channelPartners", label: "Channel Partners", icon: Layers },
+    { id: "inventory", label: "Kit Inventory", icon: Archive },
+    { id: "orderManager", label: "Order Manager", icon: CreditCard },
+];
+function App() {
+    const [page, setPage] = useState("orderManager");
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const navigateTo = (p) => { setPage(p); setMobileMenuOpen(false); };
+    const renderPage = () => {
+        if (page === "orderManager")
+            return React.createElement(OrderManagerPage, {});
+        // Placeholder for other pages
+        const item = navItems.find(n => n.id === page);
+        return React.createElement('div', { className: 'animate-fadeInUp' }, React.createElement('div', { className: 'bg-white rounded-2xl border border-gray-200 shadow-sm p-12 text-center' }, React.createElement('div', { className: 'w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4' }, React.createElement(item?.icon || 'span', { size: 28, className: 'text-indigo-600' })), React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-2' }, item?.label || 'Page'), React.createElement('p', { className: 'text-gray-500' }, 'This page is part of the full admin panel.'), React.createElement('button', {
+            className: 'mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700',
+            onClick: () => navigateTo('orderManager')
+        }, '← Back to Order Manager')));
+    };
+    return React.createElement(React.Fragment, null, 
+    // Global styles
+    React.createElement('style', null, `
+      @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+      @keyframes slideInLeft { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+      .animate-fadeInUp { animation: fadeInUp 0.4s ease-out both; }
+      .animate-fadeIn { animation: fadeIn 0.3s ease-out both; }
+      .sidebar-item { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
+      .sidebar-item:hover { transform: translateX(2px); }
+      .custom-scroll::-webkit-scrollbar { width:6px; }
+      .custom-scroll::-webkit-scrollbar-track { background:transparent; }
+      .custom-scroll::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:3px; }
+    `), 
+    // Main layout
+    React.createElement('div', { className: 'flex h-screen bg-gray-50 font-sans' }, 
+    // Mobile menu overlay
+    mobileMenuOpen && React.createElement('div', { className: 'fixed inset-0 z-40 md:hidden' }, React.createElement('div', { className: 'fixed inset-0 bg-gray-900/50', onClick: () => setMobileMenuOpen(false) }), React.createElement('div', { className: 'fixed left-0 top-0 bottom-0 w-64 bg-white shadow-xl p-4 z-50' }, React.createElement('div', { className: 'flex items-center justify-between mb-6' }, React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('div', { className: 'w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold' }, 'PW'), React.createElement('span', { className: 'font-bold text-gray-900' }, 'PetWell')), React.createElement('button', { onClick: () => setMobileMenuOpen(false), className: 'text-gray-400' }, React.createElement(X, { size: 20 }))), navItems.map(item => {
+        const isActive = item.id === page;
+        return React.createElement('button', {
+            key: item.id,
+            onClick: () => navigateTo(item.id),
+            className: 'sidebar-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-sm font-medium ' +
+                (isActive ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50')
+        }, React.createElement(item.icon, { size: 18, className: isActive ? 'text-indigo-600' : '' }), React.createElement('span', null, item.label));
+    }))), 
+    // Desktop sidebar
+    React.createElement('div', { className: 'hidden md:flex flex-col border-r border-gray-200 bg-white ' + (sidebarCollapsed ? 'w-16' : 'w-56') + ' transition-all duration-200' }, React.createElement('div', { className: 'p-4 border-b border-gray-100' }, React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement('div', { className: 'w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0' }, 'PW'), !sidebarCollapsed && React.createElement('span', { className: 'font-bold text-gray-900' }, 'PetWell Admin'))), React.createElement('div', { className: 'flex-1 overflow-y-auto p-3 custom-scroll' }, navItems.map(item => {
+        const isActive = item.id === page;
+        return React.createElement('button', {
+            key: item.id,
+            onClick: () => navigateTo(item.id),
+            className: 'sidebar-item w-full flex items-center gap-3 px-3 py-3 rounded-xl mb-1 text-sm font-medium ' +
+                (isActive ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900')
+        }, React.createElement(item.icon, { size: 18, className: isActive ? 'text-indigo-600' : '' }), !sidebarCollapsed && React.createElement('span', null, item.label));
+    }))), 
+    // Main content
+    React.createElement('div', { className: 'flex-1 flex flex-col overflow-hidden' }, 
+    // Top bar
+    React.createElement('div', { className: 'h-14 border-b border-gray-200 bg-white flex items-center px-4 gap-4 flex-shrink-0' }, React.createElement('button', { className: 'md:hidden text-gray-600', onClick: () => setMobileMenuOpen(true) }, React.createElement(Menu, { size: 20 })), React.createElement('h1', { className: 'text-sm font-semibold text-gray-700' }, navItems.find(n => n.id === page)?.label || 'Dashboard'), React.createElement('div', { className: 'ml-auto flex items-center gap-3' }, React.createElement('div', { className: 'text-right hidden sm:block' }, React.createElement('p', { className: 'text-sm font-medium text-gray-700' }, 'Angelo'), React.createElement('p', { className: 'text-xs text-gray-400' }, 'Admin')), React.createElement('div', { className: 'w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-xs font-bold' }, 'A'))), 
+    // Content area
+    React.createElement('div', { className: 'flex-1 overflow-y-auto p-6' }, renderPage()))));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+
+  </script>
+</body>
+</html>
