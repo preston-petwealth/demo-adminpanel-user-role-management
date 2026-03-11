@@ -102,9 +102,10 @@ const DOG_BREEDS = ["Australian Cattle Dog", "Australian Shepherd", "Beagle", "B
 const CAT_BREEDS = ["Abyssinian", "American Shorthair", "Bengal", "Birman", "British Shorthair", "Burmese", "Devon Rex", "Domestic Longhair", "Domestic Shorthair", "Exotic Shorthair", "Himalayan", "Maine Coon", "Norwegian Forest Cat", "Persian", "Ragdoll", "Russian Blue", "Scottish Fold", "Siamese", "Siberian", "Sphynx", "Tabby", "Tonkinese", "Turkish Angora", "Mixed Breed", "Other"];
 
 const ROLE_PERMISSIONS = {
-  Admin: ["refund", "edit_order_status", "edit_customer", "edit_dog", "create_vet_order", "acknowledge_alert", "resolve_alert", "update_results", "flag_results", "reassign_dog", "manage_inventory", "add_notes", "view_all", "release_results"],
-  "Lab Staff": ["update_results", "flag_results", "acknowledge_alert", "add_notes", "view_all"],
-  Support: ["add_notes", "view_all"],
+  "Super Admin": ["refund", "edit_order_status", "edit_customer", "edit_dog", "create_vet_order", "acknowledge_alert", "resolve_alert", "update_results", "flag_results", "reassign_dog", "manage_inventory", "add_notes", "view_all", "release_results"],
+  "Manager": ["refund", "edit_order_status", "edit_customer", "edit_dog", "create_vet_order", "acknowledge_alert", "resolve_alert", "update_results", "flag_results", "reassign_dog", "add_notes", "view_all", "release_results"],
+  "Ops": ["edit_order_status", "update_results", "flag_results", "acknowledge_alert", "add_notes", "view_all"],
+  "CS": ["add_notes", "view_all"],
 };
 
 const INITIAL_INVENTORY = {
@@ -114,7 +115,7 @@ const INITIAL_INVENTORY = {
   "TT-004": { name: "The Collection Kit", stock: 12, lowThreshold: 5, reorderPoint: 15 },
 };
 
-// Channel Partners — distribution platforms that embed PetWell into their software
+// Channel Partners — distribution platforms that embed Petwealth into their software
 const channelPartners = [
   { id: "CP-001", name: "Kennel Connection", website: "kennelconnection.com", contactName: "Sarah Mitchell", contactEmail: "sarah@kennelconnection.com", contactPhone: "(800) 555-4200", totalNetworkFacilities: 5500, joined: "2025-11-01", status: "Active", description: "Leading dog daycare management software serving 5,500+ facilities nationwide" },
 ];
@@ -787,7 +788,7 @@ const PipelineTracker = ({ currentStatus }) => {
 
 // ─── Dashboard Page ──────────────────────────────────────────────────────────
 
-const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, kitInventory, currentUser, healthAlerts }) => {
+const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, currentUser, healthAlerts }) => {
   const pipelineCounts = useMemo(() => {
     const counts = {};
     PIPELINE_STAGES.forEach(s => { counts[s.key] = 0; });
@@ -805,7 +806,7 @@ const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, kitInvent
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-1">Welcome back{currentUser ? `, ${currentUser.name}` : ""}. Here's your PetWell overview.</p>
+          <p className="text-gray-500 text-sm mt-1">Welcome back{currentUser ? `, ${currentUser.name}` : ""}. Here's your Petwealth overview.</p>
         </div>
         <div className="text-sm text-gray-400 hidden sm:block">Feb 12, 2026</div>
       </div>
@@ -817,79 +818,29 @@ const DashboardPage = ({ setPage, setSelectedOrder, setSelectedResult, kitInvent
         <StatCard icon={FileText} label="Revenue" value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} change="22%" changeType="up" accent="bg-emerald-500" delay={0.2} />
       </div>
 
-      {/* Kit Inventory + Alerts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {kitInventory && (
-          <div onClick={() => setPage("inventory")} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:shadow-md transition animate-fadeInUp" style={{ animationDelay: '0.12s' }}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-gray-900">Kit Stock</h2>
-              <Archive size={16} className="text-gray-400" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {Object.entries(kitInventory).map(([key, kit]) => {
-                const color = kit.stock <= kit.lowThreshold ? "red" : kit.stock <= kit.lowThreshold * 2 ? "amber" : "emerald";
-                return (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 truncate mr-2">{kit.name.replace(" Kit", "")}</span>
-                    <span className={`text-sm font-bold text-${color}-600`}>{kit.stock}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {Object.values(kitInventory).some(k => k.stock <= k.lowThreshold) && (
-              <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-red-600"><AlertTriangle size={12} /> Low stock warning</div>
-            )}
+      {/* Health Alerts */}
+      {healthAlerts && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-fadeInUp" style={{ animationDelay: '0.14s' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-gray-900">Health Alerts</h2>
+            <AlertOctagon size={16} className="text-gray-400" />
           </div>
-        )}
-        {healthAlerts && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-fadeInUp" style={{ animationDelay: '0.14s' }}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-gray-900">Health Alerts</h2>
-              <AlertOctagon size={16} className="text-gray-400" />
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="p-3 rounded-xl bg-red-50">
+              <div className="text-xl font-bold text-red-700">{healthAlerts.filter(a => a.status === "unresolved").length}</div>
+              <div className="text-xs text-red-600 font-medium">Unresolved</div>
             </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 rounded-xl bg-red-50">
-                <div className="text-xl font-bold text-red-700">{healthAlerts.filter(a => a.status === "unresolved").length}</div>
-                <div className="text-xs text-red-600 font-medium">Unresolved</div>
-              </div>
-              <div className="p-3 rounded-xl bg-amber-50">
-                <div className="text-xl font-bold text-amber-700">{healthAlerts.filter(a => a.status === "acknowledged").length}</div>
-                <div className="text-xs text-amber-600 font-medium">Acknowledged</div>
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-50">
-                <div className="text-xl font-bold text-emerald-700">{healthAlerts.filter(a => a.status === "resolved").length}</div>
-                <div className="text-xs text-emerald-600 font-medium">Resolved</div>
-              </div>
+            <div className="p-3 rounded-xl bg-amber-50">
+              <div className="text-xl font-bold text-amber-700">{healthAlerts.filter(a => a.status === "acknowledged").length}</div>
+              <div className="text-xs text-amber-600 font-medium">Acknowledged</div>
+            </div>
+            <div className="p-3 rounded-xl bg-emerald-50">
+              <div className="text-xl font-bold text-emerald-700">{healthAlerts.filter(a => a.status === "resolved").length}</div>
+              <div className="text-xs text-emerald-600 font-medium">Resolved</div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Channel Partners Widget */}
-      <div onClick={() => setPage("channelPartners")} className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border border-orange-200 shadow-sm p-5 cursor-pointer hover:shadow-md transition animate-fadeInUp" style={{ animationDelay: '0.15s' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Layers size={18} className="text-orange-600" />
-            <h2 className="text-base font-bold text-gray-900">Channel Partners</h2>
-          </div>
-          <ChevronRight size={16} className="text-orange-400" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {channelPartners.map(cp => {
-            const cpFacilities = getFacilitiesForChannel(cp.id);
-            const cpOrders = orders.filter(o => o.orderChannel === "facility" && cpFacilities.some(f => f.id === o.customerId));
-            const cpRevenue = cpOrders.reduce((s, o) => s + o.price, 0);
-            return (
-              <React.Fragment key={cp.id}>
-                <div><div className="text-xs text-orange-700 font-medium">{cp.name}</div><div className="text-lg font-bold text-gray-900">{cpFacilities.length} <span className="text-xs font-normal text-gray-500">of {cp.totalNetworkFacilities.toLocaleString()}</span></div><div className="text-xs text-gray-500">facilities active</div></div>
-                <div><div className="text-xs text-orange-700 font-medium">Orders</div><div className="text-lg font-bold text-gray-900">{cpOrders.length}</div><div className="text-xs text-gray-500">facility orders</div></div>
-                <div><div className="text-xs text-orange-700 font-medium">Revenue</div><div className="text-lg font-bold text-emerald-600">${cpRevenue.toLocaleString()}</div><div className="text-xs text-gray-500">wholesale</div></div>
-                <div><div className="text-xs text-orange-700 font-medium">Growth</div><div className="text-lg font-bold text-gray-900">{((cpFacilities.length / cp.totalNetworkFacilities) * 100).toFixed(2)}%</div><div className="text-xs text-gray-500">penetration rate</div></div>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* Pipeline Funnel */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-fadeInUp" style={{ animationDelay: '0.17s' }}>
@@ -3436,7 +3387,7 @@ const NewOrderPage = ({ setPage, currentUser, initCustomerId, initBulk, clearIni
                   {newCustomer.customerCategory && (
                     <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 animate-fadeInUp">
                       <div className="text-xs font-semibold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5 mb-3"><Lock size={12} /> Portal Account Setup</div>
-                      <p className="text-xs text-indigo-600/70 mb-3">This customer will get a login to view test results on the PetWell portal.</p>
+                      <p className="text-xs text-indigo-600/70 mb-3">This customer will get a login to view test results on the Petwealth portal.</p>
                       <div>
                         <label className="text-xs font-medium text-gray-600 mb-1.5 block">Login Method</label>
                         <div className="flex gap-2">
@@ -4180,7 +4131,7 @@ const ChannelPartnersPage = ({ setPage, setSelectedCustomer, createOrderFor, goB
         <div>
           <button onClick={goBack} className="flex items-center gap-1 text-xs text-indigo-600 font-semibold hover:text-indigo-700 transition-colors group mb-1"><ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> Back</button>
           <h1 className="text-2xl font-bold text-gray-900">Channel Partners</h1>
-          <p className="text-gray-500 text-sm mt-1">Distribution platforms that embed PetWell into their software</p>
+          <p className="text-gray-500 text-sm mt-1">Distribution platforms that embed Petwealth into their software</p>
         </div>
 
         {channelPartners.map(cp => {
@@ -4218,7 +4169,7 @@ const ChannelPartnersPage = ({ setPage, setSelectedCustomer, createOrderFor, goB
                         <div className="text-xs text-orange-600">total facilities</div>
                       </div>
                       <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
-                        <div className="text-xs font-semibold text-indigo-700 mb-1">Active on PetWell</div>
+                        <div className="text-xs font-semibold text-indigo-700 mb-1">Active on Petwealth</div>
                         <div className="text-xl font-bold text-indigo-900">{facilities.length}</div>
                         <div className="text-xs text-indigo-600">facilities onboarded</div>
                       </div>
@@ -4594,11 +4545,24 @@ const FacilityDetailPage = ({ customerId, setPage, setSelectedDog, setSelectedOr
 // ─── Login Page ─────────────────────────────────────────────────────────────
 
 const adminUsers = [
-  { email: "angelo@petwell.com", name: "Angelo P.", role: "Admin", empId: "EMP-001", initials: "AP", avatar: "bg-indigo-600" },
-  { email: "maria@petwell.com", name: "Maria Santos", role: "Lab Staff", empId: "EMP-002", initials: "MS", avatar: "bg-emerald-600" },
-  { email: "kevin@petwell.com", name: "Kevin Wu", role: "Support", empId: "EMP-003", initials: "KW", avatar: "bg-amber-600" },
-  { email: "jasmine@petwell.com", name: "Jasmine Lee", role: "Lab Staff", empId: "EMP-004", initials: "JL", avatar: "bg-rose-600" },
-  { email: "derek@petwell.com", name: "Derek Hall", role: "Support", empId: "EMP-005", initials: "DH", avatar: "bg-sky-600" },
+  { email: "angelo@petwealth.com", name: "Angelo P.", role: "Super Admin", empId: "EMP-001", initials: "AP", avatar: "bg-indigo-600" },
+  { email: "maria@petwealth.com", name: "Maria Santos", role: "Manager", empId: "EMP-002", initials: "MS", avatar: "bg-emerald-600" },
+  { email: "kevin@petwealth.com", name: "Kevin Wu", role: "CS", empId: "EMP-003", initials: "KW", avatar: "bg-amber-600" },
+  { email: "jasmine@petwealth.com", name: "Jasmine Lee", role: "Ops", empId: "EMP-004", initials: "JL", avatar: "bg-rose-600" },
+  { email: "derek@petwealth.com", name: "Derek Hall", role: "CS", empId: "EMP-005", initials: "DH", avatar: "bg-sky-600" },
+];
+
+const INTERNAL_ROLES = ["Super Admin", "Manager", "Ops", "CS"];
+const INVITE_ROLES = ["Manager", "Ops", "CS"];
+
+const INITIAL_INTERNAL_USERS = [
+  { id: "USR-001", firstName: "Angelo", lastName: "P.", email: "angelo@petwealth.com", role: "Super Admin", status: "Active", dateAdded: "2024-01-15", lastLogin: "2026-03-11" },
+  { id: "USR-002", firstName: "Maria", lastName: "Santos", email: "maria@petwealth.com", role: "Manager", status: "Active", dateAdded: "2024-03-01", lastLogin: "2026-03-10" },
+  { id: "USR-003", firstName: "Kevin", lastName: "Wu", email: "kevin@petwealth.com", role: "CS", status: "Active", dateAdded: "2024-06-15", lastLogin: "2026-03-09" },
+  { id: "USR-004", firstName: "Jasmine", lastName: "Lee", email: "jasmine@petwealth.com", role: "Ops", status: "Active", dateAdded: "2024-08-01", lastLogin: "2026-03-11" },
+  { id: "USR-005", firstName: "Derek", lastName: "Hall", email: "derek@petwealth.com", role: "CS", status: "Active", dateAdded: "2024-09-20", lastLogin: "2026-02-28" },
+  { id: "USR-006", firstName: "Rachel", lastName: "Kim", email: "rachel@petwealth.com", role: "Ops", status: "Deactivated", dateAdded: "2024-05-10", lastLogin: "2025-11-30" },
+  { id: "USR-007", firstName: "Tyler", lastName: "Brooks", email: "tyler@petwealth.com", role: "Manager", status: "Pending", dateAdded: "2026-03-08", lastLogin: null },
 ];
 
 const GoogleLogo = () => (
@@ -4658,7 +4622,7 @@ const LoginPage = ({ onLogin }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-4 shadow-lg shadow-indigo-200">
             <span className="text-white text-xl font-bold">PW</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">PetWell Admin</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Petwealth Admin</h1>
           <p className="text-sm text-gray-500 mt-1">Diagnostic Lab Management Portal</p>
         </div>
 
@@ -4668,12 +4632,12 @@ const LoginPage = ({ onLogin }) => {
             <div className="text-center py-8">
               <div className="w-10 h-10 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" style={{ borderWidth: "3px" }} />
               <p className="text-sm font-medium text-gray-700">Signing in{selectedAccount ? ` as ${selectedAccount.name}` : ""}...</p>
-              <p className="text-xs text-gray-400 mt-1">Verifying @petwell.com credentials</p>
+              <p className="text-xs text-gray-400 mt-1">Verifying @petwealth.com credentials</p>
             </div>
           ) : showAccountPicker ? (
             <div>
               <h2 className="text-base font-bold text-gray-900 mb-1">Choose an account</h2>
-              <p className="text-xs text-gray-500 mb-4">to continue to PetWell Admin</p>
+              <p className="text-xs text-gray-500 mb-4">to continue to Petwealth Admin</p>
               <div className="space-y-1.5">
                 {adminUsers.map(user => (
                   <button key={user.email} onClick={() => handleSelectAccount(user)}
@@ -4694,7 +4658,7 @@ const LoginPage = ({ onLogin }) => {
           ) : (
             <div>
               <h2 className="text-base font-bold text-gray-900 mb-1">Sign in to your account</h2>
-              <p className="text-xs text-gray-500 mb-6">Use your PetWell company Google account to access the admin dashboard.</p>
+              <p className="text-xs text-gray-500 mb-6">Use your Petwealth company Google account to access the admin dashboard.</p>
 
               {error && (
                 <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
@@ -4738,9 +4702,9 @@ const LoginPage = ({ onLogin }) => {
         <div className="mt-6 text-center">
           <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
             <ShieldCheck size={12} />
-            <span>Restricted to @petwell.com accounts</span>
+            <span>Restricted to @petwealth.com accounts</span>
           </div>
-          <p className="text-[11px] text-gray-300 mt-2">PetWell Diagnostics · PCR-Based Pet Health Testing</p>
+          <p className="text-[11px] text-gray-300 mt-2">Petwealth Diagnostics · PCR-Based Pet Health Testing</p>
         </div>
       </div>
     </div>
@@ -4927,7 +4891,7 @@ const OM_DOG_BREEDS = ["Labrador Retriever","German Shepherd","Golden Retriever"
 const OM_CAT_BREEDS = ["Domestic Shorthair","Domestic Longhair","Siamese","Persian","Maine Coon","Ragdoll","Bengal","Abyssinian","British Shorthair","Scottish Fold","Sphynx","Russian Blue","Burmese","Norwegian Forest Cat","Birman","Oriental Shorthair","Devon Rex","Exotic Shorthair","Mixed Breed","Other"];
 
 const OM_USERS = [
-  { email: "angelo@petwell.com", password: "admin", role: "admin", name: "Angelo", customerId: null },
+  { email: "angelo@petwealth.com", password: "admin", role: "admin", name: "Angelo", customerId: null },
   { email: "sarah@goldenpawsbreeding.com", password: "golden123", role: "customer", name: "Sarah Mitchell", customerId: "CUST-001" },
   { email: "james.r@email.com", password: "james123", role: "customer", name: "James Rivera", customerId: "CUST-002" },
   { email: "lisa@happytailsvet.com", password: "happy123", role: "customer", name: "Lisa Chen", customerId: "CUST-003" },
@@ -5068,7 +5032,7 @@ function OM_printOrderContent(order, petProfiles) {
 
   let c = "", y = OM_PH_PT - M;
   c += OM_pdfFill(0.05,0.58,0.53); c += OM_pdfR(0,OM_PH_PT-30,OM_PW_PT,30);
-  c += OM_pdfFill(1,1,1); c += OM_pdfT(M, OM_PH_PT-22, "PetWell Order Report", 14, true);
+  c += OM_pdfFill(1,1,1); c += OM_pdfT(M, OM_PH_PT-22, "Petwealth Order Report", 14, true);
   c += OM_pdfFill(0,0,0); y -= 30;
   c += OM_pdfFill(0.42,0.45,0.49); c += OM_pdfT(M, y, "Order ID", 8); c += OM_pdfT(200, y, "Date", 8); c += OM_pdfT(350, y, "Status", 8);
   y -= 16; c += OM_pdfFill(0,0,0); c += OM_pdfT(M, y, order.id, 16, true); c += OM_pdfT(200, y, OM_formatDate(order.date), 11); c += OM_pdfT(350, y, order.status, 11, true);
@@ -5100,7 +5064,7 @@ function OM_printOrderContent(order, petProfiles) {
     c += OM_pdfFill(0,0,0); c += OM_pdfT(M, y, order.notes.substring(0,90), 9);
     if (order.notes.length > 90) { y -= 12; c += OM_pdfT(M, y, order.notes.substring(90, 180), 9); }
   }
-  c += OM_pdfFill(0.62,0.64,0.68); c += OM_pdfT(M, 30, "Generated from PetWell Order Management  |  " + new Date().toLocaleDateString(), 7);
+  c += OM_pdfFill(0.62,0.64,0.68); c += OM_pdfT(M, 30, "Generated from Petwealth Order Management  |  " + new Date().toLocaleDateString(), 7);
   pages.push({ c, w: OM_PW_PT, h: OM_PH_PT });
 
   if (order.bulkKits && order.bulkKits.length > 0) {
@@ -5125,7 +5089,7 @@ function OM_printOrderContent(order, petProfiles) {
         else { pc += OM_pdfFill(0.75,0.75,0.75); pc += OM_pdfT(220, py, "Not registered", 7); }
         py -= 15;
       }
-      pc += OM_pdfFill(0.62,0.64,0.68); pc += OM_pdfT(M, 30, "PetWell Kit Registry  |  " + new Date().toLocaleDateString(), 7);
+      pc += OM_pdfFill(0.62,0.64,0.68); pc += OM_pdfT(M, 30, "Petwealth Kit Registry  |  " + new Date().toLocaleDateString(), 7);
       pages.push({ c: pc, w: OM_PW_PT, h: OM_PH_PT });
     }
   }
@@ -5147,7 +5111,7 @@ function OM_printBarcodeSheet(order) {
         const kit = kits[idx];
         const lx = LML + col * (LW + CG);
         const ly = OM_PH_PT - LMT - (row + 1) * LH;
-        c += OM_pdfFill(0.53,0.53,0.53); c += OM_pdfT(lx + 4, ly + LH - 10, "PetWell  |  " + (order.bulkProduct || "Test Kit"), 5.5, true);
+        c += OM_pdfFill(0.53,0.53,0.53); c += OM_pdfT(lx + 4, ly + LH - 10, "Petwealth  |  " + (order.bulkProduct || "Test Kit"), 5.5, true);
         c += OM_pdfBarcode128(lx + 14, ly + 14, kit.kitId, 160, 30);
         c += OM_pdfFill(0,0,0); c += OM_pdfT(lx + 38, ly + 4, kit.kitId, 7, true);
       }
@@ -5399,8 +5363,8 @@ function OMAdminOrderList({ orders, onSelectOrder, petProfiles }) {
         <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option>All</option>{OM_STATUS_FLOW.map(s => <option key={s}>{s}</option>)}<option>Cancelled</option>
         </select>
-        <button onClick={() => { const csv = OM_buildOrderKitCSV(filtered, petProfiles); OM_downloadCSV(`PetWell-All-Orders-Kits-Pets-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-teal-300 text-teal-700 text-sm rounded-lg hover:bg-teal-50 flex items-center gap-1.5 shadow-sm"><OMIconCSV /> Export All CSV</button>
-        <button onClick={() => { const csv = OM_buildOrderSummaryCSV(filtered); OM_downloadCSV(`PetWell-Order-Summary-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm"><OMIconDownload /> Summary CSV</button>
+        <button onClick={() => { const csv = OM_buildOrderKitCSV(filtered, petProfiles); OM_downloadCSV(`Petwealth-All-Orders-Kits-Pets-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-teal-300 text-teal-700 text-sm rounded-lg hover:bg-teal-50 flex items-center gap-1.5 shadow-sm"><OMIconCSV /> Export All CSV</button>
+        <button onClick={() => { const csv = OM_buildOrderSummaryCSV(filtered); OM_downloadCSV(`Petwealth-Order-Summary-${new Date().toISOString().slice(0,10)}.csv`, csv); }} className="px-3 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm"><OMIconDownload /> Summary CSV</button>
       </div>
       {filtered.length === 0 ? <div className="text-center py-12 text-gray-400"><p className="text-lg">No orders found</p></div> : (
         <div className="space-y-2">
@@ -6029,6 +5993,411 @@ function OrderManagerPage({ initialView, omOrders, setOmOrders, omPetProfiles, s
   );
 }
 
+// ─── User Management ─────────────────────────────────────────────────────────
+
+const getRoleBadgeStyle = (role) => {
+  switch (role) {
+    case "Super Admin": return "bg-indigo-100 text-indigo-700 border border-indigo-200";
+    case "Manager": return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    case "Ops": return "bg-amber-50 text-amber-700 border border-amber-200";
+    case "CS": return "bg-sky-50 text-sky-700 border border-sky-200";
+    default: return "bg-gray-100 text-gray-600 border border-gray-200";
+  }
+};
+
+const getStatusBadgeStyle = (status) => {
+  switch (status) {
+    case "Active": return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    case "Deactivated": return "bg-red-50 text-red-600 border border-red-200";
+    case "Pending": return "bg-amber-50 text-amber-600 border border-amber-200";
+    default: return "bg-gray-100 text-gray-600 border border-gray-200";
+  }
+};
+
+const ConfirmActionModal = ({ title, message, confirmLabel, confirmStyle, onConfirm, onCancel, iconType = "warning" }) => (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 animate-scaleIn shadow-xl">
+      <div className="flex items-start gap-4 mb-5">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconType === "warning" ? "bg-red-50" : "bg-emerald-50"}`}>
+          {iconType === "warning"
+            ? <AlertTriangle size={18} className="text-red-500" />
+            : <CheckCircle size={18} className="text-emerald-500" />}
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-gray-900">{title}</h2>
+          <p className="text-sm text-gray-500 mt-1">{message}</p>
+        </div>
+      </div>
+      <div className="flex gap-3">
+        <button onClick={onCancel} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">Cancel</button>
+        <button onClick={onConfirm} className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition ${confirmStyle}`}>{confirmLabel}</button>
+      </div>
+    </div>
+  </div>
+);
+
+const InviteUserModal = ({ onClose, onInvite, existingEmails }) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [emailError, setEmailError] = useState(null);
+
+  const handleSubmit = () => {
+    if (!firstName || !lastName || !email || !role) return;
+    if (existingEmails.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
+      setEmailError("A user with this email already exists.");
+      return;
+    }
+    onInvite({
+      id: `USR-${String(Date.now()).slice(-5)}`,
+      firstName, lastName,
+      email: email.toLowerCase(),
+      role, status: "Pending",
+      dateAdded: new Date().toISOString().split("T")[0],
+      lastLogin: null,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 animate-scaleIn shadow-xl">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Invite User</h2>
+            <p className="text-xs text-gray-500 mt-0.5">An invitation email will be sent via Auth0.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition"><X size={20} /></button>
+        </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">First Name</label>
+              <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
+                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Jane" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Last Name</label>
+              <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
+                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Smith" />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Email Address</label>
+            <input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailError(null); }}
+              className={`w-full px-3 py-2.5 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${emailError ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+              placeholder="jane@petwealth.com" />
+            {emailError && <p className="text-xs text-red-600 mt-1">{emailError}</p>}
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Role</label>
+            <select value={role} onChange={e => setRole(e.target.value)}
+              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Select a role...</option>
+              {INVITE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <p className="text-[11px] text-gray-400 mt-1">Super Admin is excluded from self-service invite to prevent privilege escalation.</p>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">Cancel</button>
+          <button onClick={handleSubmit} disabled={!firstName || !lastName || !email || !role}
+            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Send Invitation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditRoleModal = ({ user, onClose, onSave }) => {
+  const [role, setRole] = useState(user.role);
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 animate-scaleIn shadow-xl">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold text-gray-900">Edit Role</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition"><X size={20} /></button>
+        </div>
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-4">
+          <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {user.firstName[0]}{user.lastName[0]}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-gray-900">{user.firstName} {user.lastName}</div>
+            <div className="text-xs text-gray-500 truncate">{user.email}</div>
+          </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">Role</label>
+          <select value={role} onChange={e => setRole(e.target.value)}
+            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {INTERNAL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">Cancel</button>
+          <button onClick={() => onSave(user.id, role)} disabled={role === user.role}
+            className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UserManagementPage = ({ currentUser, goBack }) => {
+  const [users, setUsers] = useState(INITIAL_INTERNAL_USERS);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [deactivatingUser, setDeactivatingUser] = useState(null);
+  const [reactivatingUser, setReactivatingUser] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const filtered = users.filter(u => {
+    const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+    const matchSearch = !search || fullName.includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+    const matchRole = roleFilter === "All" || u.role === roleFilter;
+    const matchStatus = statusFilter === "All" || u.status === statusFilter;
+    return matchSearch && matchRole && matchStatus;
+  });
+
+  const isSelf = (u) => u.email === currentUser?.email;
+
+  const handleInvite = (newUser) => {
+    setUsers(prev => [...prev, newUser]);
+    setShowInviteModal(false);
+    showToast(`Invitation sent to ${newUser.email}`);
+  };
+
+  const handleEditRole = (userId, newRole) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    setEditingUser(null);
+    showToast("Role updated successfully");
+  };
+
+  const handleDeactivate = () => {
+    const name = `${deactivatingUser.firstName} ${deactivatingUser.lastName}`;
+    setUsers(prev => prev.map(u => u.id === deactivatingUser.id ? { ...u, status: "Deactivated" } : u));
+    setDeactivatingUser(null);
+    showToast(`${name} has been deactivated`);
+  };
+
+  const handleReactivate = () => {
+    const name = `${reactivatingUser.firstName} ${reactivatingUser.lastName}`;
+    setUsers(prev => prev.map(u => u.id === reactivatingUser.id ? { ...u, status: "Active" } : u));
+    setReactivatingUser(null);
+    showToast(`${name} has been reactivated`);
+  };
+
+  const activeCount = users.filter(u => u.status === "Active").length;
+  const pendingCount = users.filter(u => u.status === "Pending").length;
+  const deactivatedCount = users.filter(u => u.status === "Deactivated").length;
+
+  return (
+    <AnimatedPage>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm animate-scaleIn">
+          <CheckCircle size={15} /> {toast}
+        </div>
+      )}
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <button onClick={goBack} className="flex items-center gap-1 text-xs text-indigo-600 font-semibold hover:text-indigo-700 transition-colors group mb-1">
+              <ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> Back
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">User Management</h1>
+            <p className="text-gray-500 text-sm mt-1">
+              {activeCount} active · {pendingCount} pending · {deactivatedCount} deactivated
+            </p>
+          </div>
+          <button onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition shadow-sm shadow-indigo-200 flex-shrink-0">
+            <Plus size={16} /> Invite User
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3">
+          <div className="w-full sm:w-72">
+            <SearchInput value={search} onChange={setSearch} placeholder="Search by name or email..." />
+          </div>
+          <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+            className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
+            <option value="All">All Roles</option>
+            {INTERNAL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Pending">Pending</option>
+            <option value="Deactivated">Deactivated</option>
+          </select>
+        </div>
+
+        {/* Desktop Table */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hidden md:block">
+          <div className="overflow-x-auto custom-scroll">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/50">
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Added</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
+                  <th className="px-5 py-3.5"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-12 text-center text-sm text-gray-400">No users match your search or filters.</td>
+                  </tr>
+                ) : filtered.map(u => {
+                  const initials = `${u.firstName[0]}${u.lastName[0]}`;
+                  const self = isSelf(u);
+                  return (
+                    <tr key={u.id} className={`border-b border-gray-50 row-hover ${u.status === "Deactivated" ? "opacity-60" : ""}`}>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${u.status === "Deactivated" ? "bg-gray-400" : "bg-indigo-500"}`}>{initials}</div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-gray-900 text-sm">{u.firstName} {u.lastName}</span>
+                              {self && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">You</span>}
+                            </div>
+                            <div className="text-xs text-gray-400">{u.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-gray-600">{u.email}</td>
+                      <td className="px-5 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeStyle(u.role)}`}>{u.role}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadgeStyle(u.status)}`}>{u.status}</span>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-gray-500">{u.dateAdded}</td>
+                      <td className="px-5 py-4 text-sm text-gray-500">{u.lastLogin || "—"}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2 justify-end">
+                          {u.status !== "Deactivated" && !self && (
+                            <button onClick={() => setEditingUser(u)}
+                              className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                              Edit Role
+                            </button>
+                          )}
+                          {u.status === "Active" && !self && (
+                            <button onClick={() => setDeactivatingUser(u)}
+                              className="px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition">
+                              Deactivate
+                            </button>
+                          )}
+                          {u.status === "Deactivated" && (
+                            <button onClick={() => setReactivatingUser(u)}
+                              className="px-3 py-1.5 text-xs font-semibold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition">
+                              Reactivate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile card view */}
+        <div className="block md:hidden space-y-3">
+          {filtered.length === 0 ? (
+            <div className="text-center text-sm text-gray-400 py-8">No users match your search or filters.</div>
+          ) : filtered.map((u, idx) => {
+            const initials = `${u.firstName[0]}${u.lastName[0]}`;
+            const self = isSelf(u);
+            return (
+              <div key={u.id} className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 animate-fadeInUp ${u.status === "Deactivated" ? "opacity-60" : ""}`} style={{ animationDelay: `${idx * 0.03}s` }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${u.status === "Deactivated" ? "bg-gray-400" : "bg-indigo-500"}`}>{initials}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold text-gray-900 text-sm">{u.firstName} {u.lastName}</span>
+                      {self && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">You</span>}
+                    </div>
+                    <div className="text-xs text-gray-400 truncate">{u.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeStyle(u.role)}`}>{u.role}</span>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadgeStyle(u.status)}`}>{u.status}</span>
+                </div>
+                <div className="text-xs text-gray-400 mb-3">Added {u.dateAdded} · Last login: {u.lastLogin || "—"}</div>
+                <div className="flex gap-2">
+                  {u.status !== "Deactivated" && !self && (
+                    <button onClick={() => setEditingUser(u)} className="flex-1 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-center">Edit Role</button>
+                  )}
+                  {u.status === "Active" && !self && (
+                    <button onClick={() => setDeactivatingUser(u)} className="flex-1 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition text-center">Deactivate</button>
+                  )}
+                  {u.status === "Deactivated" && (
+                    <button onClick={() => setReactivatingUser(u)} className="flex-1 px-3 py-1.5 text-xs font-semibold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition text-center">Reactivate</button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {showInviteModal && (
+        <InviteUserModal
+          onClose={() => setShowInviteModal(false)}
+          onInvite={handleInvite}
+          existingEmails={users.map(u => u.email)}
+        />
+      )}
+      {editingUser && (
+        <EditRoleModal user={editingUser} onClose={() => setEditingUser(null)} onSave={handleEditRole} />
+      )}
+      {deactivatingUser && (
+        <ConfirmActionModal
+          title="Deactivate User"
+          message={`Deactivate ${deactivatingUser.firstName} ${deactivatingUser.lastName}? They will lose access to all Petwealth applications. This can be reversed.`}
+          confirmLabel="Deactivate"
+          confirmStyle="bg-red-600 hover:bg-red-700 text-white"
+          iconType="warning"
+          onConfirm={handleDeactivate}
+          onCancel={() => setDeactivatingUser(null)}
+        />
+      )}
+      {reactivatingUser && (
+        <ConfirmActionModal
+          title="Reactivate User"
+          message={`Reactivate ${reactivatingUser.firstName} ${reactivatingUser.lastName}? They will regain access based on their assigned role.`}
+          confirmLabel="Reactivate"
+          confirmStyle="bg-emerald-600 hover:bg-emerald-700 text-white"
+          iconType="success"
+          onConfirm={handleReactivate}
+          onCancel={() => setReactivatingUser(null)}
+        />
+      )}
+    </AnimatedPage>
+  );
+};
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 const navItems = [
@@ -6038,11 +6407,8 @@ const navItems = [
   { id: "customers", label: "Customers", icon: Users },
   { id: "dogs", label: "Dogs", icon: () => <span className="text-sm">🐕</span> },
   { id: "results", label: "Lab Results", icon: Microscope },
-  { id: "vetPartners", label: "Vet Partners", icon: Stethoscope },
-  { id: "channelPartners", label: "Channel Partners", icon: Layers },
-  { id: "inventory", label: "Kit Inventory", icon: Archive },
   { id: "orderManager", label: "Wholesale Manager", icon: CreditCard },
-  { id: "customerPortal", label: "Customer Portal", icon: Eye },
+  { id: "userManagement", label: "User Management", icon: ShieldCheck, showFor: ["Super Admin"] },
 ];
 
 // Module-level navigation history — persists across re-renders and remounts
@@ -6071,7 +6437,6 @@ export default function App() {
     { id: "INV-005", kitType: "TT-001", change: 50, reason: "Manual restock", date: "2025-11-01", by: "Angelo P." },
     { id: "INV-006", kitType: "TT-004", change: 20, reason: "Manual restock", date: "2025-12-01", by: "Angelo P." },
   ]);
-  const [showCreateVetOrder, setShowCreateVetOrder] = useState(false);
   const [newOrderCustomerId, setNewOrderCustomerId] = useState(null);
   const [newOrderBulk, setNewOrderBulk] = useState(false);
 
@@ -6130,12 +6495,6 @@ export default function App() {
   const getActiveNav = () => {
     if (["orderDetail"].includes(page)) return "orders";
     if (["orderManagerDetail", "orderManagerPetProfile"].includes(page)) return "orderManager";
-    if (page === "customerDetail" && selectedCustomer) {
-      const cust = customers.find(c => c.id === selectedCustomer);
-      if (cust?.type === "vet") return "vetPartners";
-      if (cust?.type === "facility") return "channelPartners";
-    }
-    if (page === "facilityDetail") return "channelPartners";
     if (["customerDetail", "petOwnerDetail"].includes(page)) return "customers";
     if (["dogDetail"].includes(page)) return "dogs";
     if (["resultDetail"].includes(page)) return "results";
@@ -6155,17 +6514,14 @@ export default function App() {
     }
     if (page === "dogDetail" && selectedDog) return `Dogs / ${getDogName(selectedDog)}`;
     if (page === "resultDetail" && selectedResult) { const r = labResults.find(x => x.id === selectedResult); return `Lab Results / ${r?.testType}`; }
-    if (page === "vetPartners") return "Vet Partners";
-    if (page === "channelPartners") return "Channel Partners";
-    if (page === "facilityDetail" && selectedCustomer) return `Channel Partners / ${getCustomerName(selectedCustomer)}`;
-    if (page === "inventory") return "Kit Inventory";
+    if (page === "userManagement") return "User Management";
     return navItems.find(n => n.id === page)?.label || "Dashboard";
   };
 
   const renderPage = () => {
     const shared = { setPage: navigate, goBack, setSelectedOrder, setSelectedCustomer, setSelectedDog, setSelectedResult, setSelectedPetOwner, currentUser, healthAlerts, setHealthAlerts, createOrderFor, createBulkOrderFor };
     switch (page) {
-      case "dashboard": return <DashboardPage kitInventory={kitInventory} {...shared} />;
+      case "dashboard": return <DashboardPage {...shared} />;
       case "orders": return <OrdersPage {...shared} />;
       case "newOrder": return <NewOrderPage {...shared} initCustomerId={newOrderCustomerId} initBulk={newOrderBulk} clearInitCustomer={() => { setNewOrderCustomerId(null); setNewOrderBulk(false); }} />;
       case "orderDetail": return <OrderDetailPage orderId={selectedOrder} activityLogs={activityLogs} setActivityLogs={setActivityLogs} paymentStates={paymentStates} setPaymentStates={setPaymentStates} {...shared} />;
@@ -6176,15 +6532,12 @@ export default function App() {
       case "dogDetail": return <DogDetailPage dogId={selectedDog} {...shared} />;
       case "results": return <ResultsPage {...shared} />;
       case "resultDetail": return <ResultDetailPage resultId={selectedResult} {...shared} />;
-      case "vetPartners": return <VetPartnersPage showCreateVetOrder={showCreateVetOrder} setShowCreateVetOrder={setShowCreateVetOrder} {...shared} />;
-      case "channelPartners": return <ChannelPartnersPage {...shared} />;
       case "facilityDetail": return <FacilityDetailPage customerId={selectedCustomer} {...shared} />;
-      case "inventory": return <InventoryPage kitInventory={kitInventory} setKitInventory={setKitInventory} inventoryLog={inventoryLog} setInventoryLog={setInventoryLog} {...shared} />;
       case "orderManager": return <OrderManagerPage {...shared} omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
       case "orderManagerDetail": return <OrderManagerPage {...shared} initialView="detail" omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
       case "orderManagerPetProfile": return <OrderManagerPage {...shared} initialView="petProfile" omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
-      case "customerPortal": return <OMCustomerPortalPage omOrders={omOrders} setOmOrders={setOmOrders} omPetProfiles={omPetProfiles} setOmPetProfiles={setOmPetProfiles} />;
-      default: return <DashboardPage kitInventory={kitInventory} {...shared} />;
+      case "userManagement": return <UserManagementPage currentUser={currentUser} goBack={goBack} />;
+      default: return <DashboardPage {...shared} />;
     }
   };
 
@@ -6201,7 +6554,7 @@ export default function App() {
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-200">PW</div>
                 <div>
-                  <div className="text-sm font-bold text-gray-900">PetWell</div>
+                  <div className="text-sm font-bold text-gray-900">Petwealth</div>
                   <div className="text-xs text-gray-400">Admin Portal</div>
                 </div>
               </div>
@@ -6210,7 +6563,7 @@ export default function App() {
               </button>
             </div>
             <nav className="flex-1 py-4 px-3">
-              {navItems.map((item, idx) => {
+              {navItems.filter(item => !item.showFor || item.showFor.includes(currentUser?.role)).map((item, idx) => {
                 const isActive = item.id === getActiveNav();
                 return (
                   <button key={item.id} onClick={() => navigateTo(item.id)}
@@ -6244,14 +6597,14 @@ export default function App() {
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-200">PW</div>
               <div>
-                <div className="text-sm font-bold text-gray-900">PetWell</div>
+                <div className="text-sm font-bold text-gray-900">Petwealth</div>
                 <div className="text-xs text-gray-400">Admin Portal</div>
               </div>
             </div>
           )}
         </div>
         <nav className="flex-1 py-4 px-2">
-          {navItems.map(item => {
+          {navItems.filter(item => !item.showFor || item.showFor.includes(currentUser?.role)).map(item => {
             const isActive = item.id === getActiveNav();
             return (
               <button key={item.id} onClick={() => navigateTo(item.id)}
@@ -6279,7 +6632,7 @@ export default function App() {
             <div className="text-sm text-gray-500 truncate">{getBreadcrumb()}</div>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
-            <button onClick={() => navigateTo("inventory")} className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="Notifications">
+            <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="Notifications">
               <Bell size={18} />
               {healthAlerts.filter(a => a.status === "unresolved").length > 0 && (
                 <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 rounded-full ring-2 ring-white text-[10px] text-white font-bold flex items-center justify-center px-1">{healthAlerts.filter(a => a.status === "unresolved").length}</span>
@@ -6322,7 +6675,6 @@ export default function App() {
         </div>
       </main>
     </div>
-    <CreateVetOrderModal isOpen={showCreateVetOrder} onClose={() => setShowCreateVetOrder(false)} currentUser={currentUser} />
     </>
   );
 }
