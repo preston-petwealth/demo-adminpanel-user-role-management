@@ -4682,7 +4682,7 @@ const LoginPage = ({ onLogin }) => {
 
               {/* Quick login for demo */}
               <div className="space-y-2">
-                {adminUsers.slice(0, 3).map(user => (
+                {adminUsers.slice(0, 4).map(user => (
                   <button key={user.email} onClick={() => handleDemoLogin(user.email)}
                     className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-indigo-50 transition text-left group">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${user.avatar}`}>{user.initials}</div>
@@ -6398,18 +6398,58 @@ const UserManagementPage = ({ currentUser, goBack }) => {
   );
 };
 
+// ─── Access Denied Page ───────────────────────────────────────────────────────
+
+const AccessDeniedPage = ({ onGoBack }) => (
+  <AnimatedPage>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mb-5">
+        <ShieldCheck size={30} className="text-red-500" />
+      </div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+      <p className="text-gray-500 mb-6 max-w-sm text-sm leading-relaxed">
+        You don't have permission to view this page. Contact a Super Admin if you believe this is a mistake.
+      </p>
+      <button onClick={onGoBack} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm">
+        Go to my dashboard
+      </button>
+    </div>
+  </AnimatedPage>
+);
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 const navItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, showFor: ["Super Admin", "Manager", "CS"] },
   { id: "orders", label: "Orders", icon: Package },
   { id: "newOrder", label: "New Order", icon: Plus },
-  { id: "customers", label: "Customers", icon: Users },
-  { id: "dogs", label: "Dogs", icon: () => <span className="text-sm">🐕</span> },
-  { id: "results", label: "Lab Results", icon: Microscope },
+  { id: "customers", label: "Customers", icon: Users, showFor: ["Super Admin", "Manager", "CS"] },
+  { id: "dogs", label: "Dogs", icon: () => <span className="text-sm">🐕</span>, showFor: ["Super Admin", "Manager", "CS"] },
+  { id: "results", label: "Lab Results", icon: Microscope, showFor: ["Super Admin", "Manager", "CS"] },
   { id: "orderManager", label: "Wholesale Manager", icon: CreditCard },
   { id: "userManagement", label: "User Management", icon: ShieldCheck, showFor: ["Super Admin"] },
 ];
+
+// Map detail/sub pages to their parent nav item for access control
+const PAGE_PARENT_MAP = {
+  orderDetail: "orders",
+  customerDetail: "customers",
+  petOwnerDetail: "customers",
+  dogDetail: "dogs",
+  resultDetail: "results",
+  orderManagerDetail: "orderManager",
+  orderManagerPetProfile: "orderManager",
+  facilityDetail: "orderManager",
+};
+
+const canAccessPage = (pageId, role) => {
+  const navId = PAGE_PARENT_MAP[pageId] || pageId;
+  const navItem = navItems.find(n => n.id === navId);
+  if (!navItem || !navItem.showFor) return true;
+  return navItem.showFor.includes(role);
+};
+
+const getDefaultPage = (role) => role === "Ops" ? "orders" : "dashboard";
 
 // Module-level navigation history — persists across re-renders and remounts
 const _navHistory = ["dashboard"];
@@ -6452,9 +6492,10 @@ export default function App() {
   const createBulkOrderFor = (customerId) => { setNewOrderCustomerId(customerId); setNewOrderBulk(true); navigate("newOrder"); };
   const handleLogin = (user) => {
     setCurrentUser(user);
+    const defaultPage = getDefaultPage(user.role);
     _navHistory.length = 0;
-    _navHistory.push("dashboard");
-    _setPage("dashboard");
+    _navHistory.push(defaultPage);
+    _setPage(defaultPage);
   };
 
   const handleLogout = () => {
@@ -6484,7 +6525,7 @@ export default function App() {
       const prev = _navHistory[_navHistory.length - 1];
       _setPage(prev);
     } else {
-      _setPage("dashboard");
+      _setPage(getDefaultPage(currentUser?.role));
     }
   };
 
@@ -6519,6 +6560,9 @@ export default function App() {
   };
 
   const renderPage = () => {
+    if (!canAccessPage(page, currentUser?.role)) {
+      return <AccessDeniedPage onGoBack={() => navigateTo(getDefaultPage(currentUser?.role))} />;
+    }
     const shared = { setPage: navigate, goBack, setSelectedOrder, setSelectedCustomer, setSelectedDog, setSelectedResult, setSelectedPetOwner, currentUser, healthAlerts, setHealthAlerts, createOrderFor, createBulkOrderFor };
     switch (page) {
       case "dashboard": return <DashboardPage {...shared} />;
