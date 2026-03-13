@@ -4890,11 +4890,12 @@ const OM_STATUS_COLORS = {
 const OM_DOG_BREEDS = ["Labrador Retriever","German Shepherd","Golden Retriever","French Bulldog","Bulldog","Poodle","Beagle","Rottweiler","Dachshund","Yorkshire Terrier","Boxer","Siberian Husky","Great Dane","Doberman","Australian Shepherd","Cavalier King Charles Spaniel","Shih Tzu","Bernese Mountain Dog","Pomeranian","Border Collie","Mixed Breed","Other"];
 const OM_CAT_BREEDS = ["Domestic Shorthair","Domestic Longhair","Siamese","Persian","Maine Coon","Ragdoll","Bengal","Abyssinian","British Shorthair","Scottish Fold","Sphynx","Russian Blue","Burmese","Norwegian Forest Cat","Birman","Oriental Shorthair","Devon Rex","Exotic Shorthair","Mixed Breed","Other"];
 
+// Auth is handled by Auth0 — no passwords stored here
 const OM_USERS = [
-  { email: "angelo@petwealth.com", password: "admin", role: "admin", name: "Angelo", customerId: null },
-  { email: "sarah@goldenpawsbreeding.com", password: "golden123", role: "customer", name: "Sarah Mitchell", customerId: "CUST-001" },
-  { email: "james.r@email.com", password: "james123", role: "customer", name: "James Rivera", customerId: "CUST-002" },
-  { email: "lisa@happytailsvet.com", password: "happy123", role: "customer", name: "Lisa Chen", customerId: "CUST-003" },
+  { email: "admin@example.com", role: "admin", name: "Angelo", customerId: null },
+  { email: "sarah@example.com", role: "customer", name: "Sarah Mitchell", customerId: "CUST-001" },
+  { email: "james@example.com", role: "customer", name: "James Rivera", customerId: "CUST-002" },
+  { email: "lisa@example.com", role: "customer", name: "Lisa Chen", customerId: "CUST-003" },
 ];
 
 const OM_generateOrderId = () => "PW-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
